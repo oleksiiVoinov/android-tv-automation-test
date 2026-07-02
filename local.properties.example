@@ -1,0 +1,14 @@
+# Copy this file to `local.properties` (git-ignored) and fill in real values.
+
+# UDID of the Android TV device. For a network-attached box use ip:port.
+udid=192.168.50.207:5555
+
+environment=dev
+appiumHost=127.0.0.1
+appiumPort=4732
+manageAppium=false
+
+# Premium staging test account used by the API sign-in precondition.
+# The TV welcome gate requires a premium account. Never commit real credentials.
+tvEmail=
+tvPassword=

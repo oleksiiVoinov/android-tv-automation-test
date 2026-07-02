@@ -1,0 +1,163 @@
+plugins {
+    id 'java'
+}
+
+wrapper {
+    gradleVersion = '8.7'
+}
+
+repositories {
+    mavenCentral()
+}
+
+group = 'org.example.testng.tv'
+version = '1.0-SNAPSHOT'
+
+def allureVersion = '2.26.0'
+def aspectJVersion = '1.9.22'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+/** =========================
+ *  Runtime config resolution
+ *  (System props -> Gradle props -> env -> local.properties -> defaults)
+ *  ========================= */
+def localRuntimeProperties = new Properties()
+def localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withInputStream { stream -> localRuntimeProperties.load(stream) }
+}
+
+def hasText = { Object value -> value != null && !value.toString().trim().isEmpty() }
+
+def runtimePropertyConfig = [
+        appiumHost   : [env: ["APPIUM_HOST"], defaultValue: "127.0.0.1"],
+        appiumPort   : [env: ["APPIUM_PORT"]],
+        appiumLogs   : [env: ["APPIUM_LOGS", "appiumLogs"], defaultValue: "false"],
+        manageAppium : [env: ["MANAGE_APPIUM"], defaultValue: "false"],
+        environment  : [env: ["ENVIRONMENT"], defaultValue: "dev"],
+        udid         : [aliases: ["UDID"], env: ["UDID"], required: true]
+]
+
+def resolveRuntimeProperty = { String propertyName, Map config = [:] ->
+    def candidateKeys = [propertyName] + (config.aliases ?: [])
+
+    for (def key : candidateKeys) {
+        def systemValue = System.getProperty(key.toString())
+        if (hasText(systemValue)) return systemValue.toString().trim()
+    }
+    for (def key : candidateKeys) {
+        def gradleValue = findProperty(key.toString())
+        if (hasText(gradleValue)) return gradleValue.toString().trim()
+    }
+    for (def envName : (config.env ?: [])) {
+        def envValue = System.getenv(envName.toString())
+        if (hasText(envValue)) return envValue.toString().trim()
+    }
+    for (def key : candidateKeys) {
+        def localValue = localRuntimeProperties.getProperty(key.toString())
+        if (hasText(localValue)) return localValue.toString().trim()
+    }
+    if (config.containsKey("defaultValue")) return config.defaultValue?.toString()
+    if (config.required) {
+        throw new GradleException(
+                "Missing required runtime config '${propertyName}'. " +
+                        "Provide -D${propertyName}=..., ${propertyName}=... in ~/.gradle/gradle.properties, " +
+                        "a local.properties file, or one of env ${config.env ?: []}."
+        )
+    }
+    return null
+}
+
+/** =========================
+ *  Compilation opts
+ *  ========================= */
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.compilerArgs.add('-parameters')
+}
+
+/** =========================
+ *  Configurations
+ *  ========================= */
+configurations {
+    agent {
+        canBeResolved = true
+        canBeConsumed = true
+    }
+}
+
+/** =========================
+ *  Dependencies
+ *  ========================= */
+dependencies {
+    implementation("io.appium:java-client:10.0.0")
+
+    implementation("org.seleniumhq.selenium:selenium-java:4.35.0")
+    implementation("org.seleniumhq.selenium:selenium-support:4.35.0")
+    implementation("org.seleniumhq.selenium:selenium-api:4.35.0")
+    implementation("org.seleniumhq.selenium:selenium-remote-driver:4.35.0")
+
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.21.1")
+    agent "org.aspectj:aspectjweaver:${aspectJVersion}"
+
+    implementation "org.testng:testng:7.10.2"
+    implementation platform("io.qameta.allure:allure-bom:${allureVersion}")
+    implementation "io.qameta.allure:allure-testng"
+    implementation "io.qameta.allure:allure-java-commons:2.26.0"
+    implementation("org.slf4j:slf4j-api:2.0.17")
+    runtimeOnly("org.slf4j:slf4j-simple:2.0.17")
+
+    // TV account auth precondition (verify -> userToken -> authorize device code)
+    implementation 'io.rest-assured:rest-assured:5.5.6'
+    implementation 'com.nimbusds:nimbus-jose-jwt:10.0.2'
+}
+
+/** =========================
+ *  Unified Test settings (apply to all Test tasks)
+ *  ========================= */
+tasks.withType(Test).configureEach {
+    testLogging {
+        events "passed", "skipped", "failed"
+        showStandardStreams = true
+        exceptionFormat = 'full'
+    }
+    ignoreFailures = true
+    useTestNG()
+    maxHeapSize = "2g"
+
+    jvmArgs = [
+            "-javaagent:${configurations.agent.singleFile}"
+    ]
+
+    System.getProperties().each { key, value ->
+        if (hasText(value)) systemProperty key.toString(), value.toString()
+    }
+    localRuntimeProperties.each { key, value ->
+        if (hasText(value) && System.getProperty(key.toString()) == null) {
+            systemProperty key.toString(), value.toString()
+        }
+    }
+    System.getenv().each { key, value ->
+        if (hasText(value) && System.getProperty(key.toString()) == null && !localRuntimeProperties.containsKey(key.toString())) {
+            systemProperty key.toString(), value.toString()
+        }
+    }
+    runtimePropertyConfig.each { propertyName, config ->
+        def value = resolveRuntimeProperty(propertyName.toString(), config as Map)
+        if (hasText(value)) systemProperty propertyName.toString(), value.toString()
+    }
+}
+
+/** =========================
+ *  Smoke suite
+ *  ========================= */
+tasks.register('smokeTest', Test) {
+    useTestNG {
+        suites "src/test/java/apps/tv/regression/smoke.xml"
+    }
+}

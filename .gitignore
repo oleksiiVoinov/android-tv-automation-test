@@ -1,0 +1,8 @@
+.gradle/
+build/
+local.properties
+*.iml
+.idea/
+allure-results/
+*.apk
+tv_dump*.xml
