@@ -115,6 +115,9 @@ dependencies {
     // TV account auth precondition (verify -> userToken -> authorize device code)
     implementation 'io.rest-assured:rest-assured:5.5.6'
     implementation 'com.nimbusds:nimbus-jose-jwt:10.0.2'
+
+    // Server-list API v7 (encrypted response + JSON models)
+    implementation 'com.google.code.gson:gson:2.13.2'
 }
 
 /** =========================
@@ -159,5 +162,11 @@ tasks.withType(Test).configureEach {
 tasks.register('smokeTest', Test) {
     useTestNG {
         suites "src/test/java/apps/tv/regression/smoke.xml"
+    }
+}
+
+tasks.register('regressionTest', Test) {
+    useTestNG {
+        suites "src/test/java/apps/tv/regression/regression.xml"
     }
 }

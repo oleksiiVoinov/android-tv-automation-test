@@ -1,0 +1,11 @@
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd" >
+<suite name="Android TV - Regression">
+    <test name="tv regression">
+        <classes>
+            <class name="apps.tv.regression.ConnectionSmokeTest"/>
+            <class name="apps.tv.regression.MainScreenTest"/>
+            <class name="apps.tv.regression.ProtocolsTest"/>
+            <class name="apps.tv.regression.ServerListTest"/>
+        </classes>
+    </test>
+</suite>

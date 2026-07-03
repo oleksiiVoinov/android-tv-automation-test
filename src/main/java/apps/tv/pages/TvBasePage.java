@@ -39,6 +39,14 @@ public abstract class TvBasePage extends Wait {
         return !appiumDriver.findElements(by).isEmpty();
     }
 
+    protected boolean isDisplayed(By by) {
+        try {
+            return fluentPresenceOfElementLocated(by).isDisplayed();
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     /**
      * Taps an element by the center of its {@code bounds} via a UiAutomator2 click gesture.
      * Verified to work on Android TV (injected touch).

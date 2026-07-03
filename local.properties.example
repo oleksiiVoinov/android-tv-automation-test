@@ -14,3 +14,9 @@ videoRecord=false
 # The TV welcome gate requires a premium account. Never commit real credentials.
 tvEmail=
 tvPassword=
+
+# Server-list API v7 (encrypted). AES key used to decode the response. Never commit.
+serverListKey=
+# Optional overrides (defaults shown).
+region=UA
+serverlistUrl=https://dev-api.mobilejump.mobi

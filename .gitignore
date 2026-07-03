@@ -6,3 +6,6 @@ local.properties
 allure-results/
 *.apk
 tv_dump*.xml
+
+# Scratch/experiments — not versioned
+src/test/java/apps/tv/temp/

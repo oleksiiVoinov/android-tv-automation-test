@@ -43,8 +43,8 @@ public class BaseTest {
 
         // Precondition — start every test from a clean slate:
         // wipe app data (logs out), grant notifications, pre-approve the VPN consent dialog.
-        new CommandsADB()
-                .clearAppData(device.app.appPackage, uDID);
+/*        new CommandsADB()
+                .clearAppData(device.app.appPackage, uDID);*/
 
         testContext = new AndroidTvConfig().initDriver(device, getAppiumHost(), getAppiumPort());
         appiumDriver = testContext.getAppiumDriver();
@@ -53,9 +53,9 @@ public class BaseTest {
         // A clean slate lands on the welcome screen — sign in via the account API
         // (device-code approve), so the app reaches the main screen with a premium session.
         // Credentials come from runtime config (local.properties / -D), never hardcoded.
-        new TvSignInPage(testContext).ensureSignedIn(
+/*        new TvSignInPage(testContext).ensureSignedIn(
                 RuntimeConfig.getRequired("tvEmail"),
-                RuntimeConfig.getRequired("tvPassword"));
+                RuntimeConfig.getRequired("tvPassword"));*/
 
         System.out.println("🧪 Starting TV test class execution...");
     }

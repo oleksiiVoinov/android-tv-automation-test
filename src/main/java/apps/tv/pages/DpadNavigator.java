@@ -113,6 +113,10 @@ public class DpadNavigator {
         // Ensure the target exists in the hierarchy up front (clear error otherwise).
         rectOf(target);
 
+        // 'V' or 'H' marks the axis that just failed to move focus, so we try the perpendicular
+        // axis next. This handles L-shaped paths (e.g. list row → UP to toolbar → RIGHT to sort),
+        // where the larger delta (horizontal) is blocked and we must go vertical first.
+        char blockedAxis = 0;
         int stuck = 0;
         for (int move = 0; move < MAX_MOVES; move++) {
             if (isFocused(target)) {
@@ -127,19 +131,36 @@ public class DpadNavigator {
             }
 
             Rectangle targetRect = rectOf(target);
-            AndroidKey direction = directionToward(center(focused), center(targetRect));
+            int dy = center(targetRect).getY() - center(focused).getY();
+            int dx = center(targetRect).getX() - center(focused).getX();
+            boolean needV = Math.abs(dy) > TOLERANCE_PX;
+            boolean needH = Math.abs(dx) > TOLERANCE_PX;
+
+            char axis;
+            if (needV && needH) {
+                if (blockedAxis == 'V') axis = 'H';
+                else if (blockedAxis == 'H') axis = 'V';
+                else axis = Math.abs(dy) >= Math.abs(dx) ? 'V' : 'H';
+            } else {
+                axis = needV ? 'V' : 'H';
+            }
+            AndroidKey direction = (axis == 'V')
+                    ? (dy > 0 ? AndroidKey.DPAD_DOWN : AndroidKey.DPAD_UP)
+                    : (dx > 0 ? AndroidKey.DPAD_RIGHT : AndroidKey.DPAD_LEFT);
 
             press(direction);
 
-            // Stuck detection: if focus didn't move after the press, we're wedged.
             Rectangle after = focusedRect();
             if (after != null && sameRect(focused, after)) {
+                // Blocked in this axis — try the other one next; fail only if both are walled.
+                blockedAxis = axis;
                 if (++stuck >= 2) {
                     throw new NoSuchElementException(
                             "focusOn: focus stuck at " + rectSig(after) + " while seeking " + target
                                     + " (wall reached or target not focusable)");
                 }
             } else {
+                blockedAxis = 0;
                 stuck = 0;
             }
         }
@@ -154,19 +175,6 @@ public class DpadNavigator {
     public DpadNavigator focusOnAndSelect(By target) {
         focusOn(target);
         return center();
-    }
-
-    private AndroidKey directionToward(Point from, Point to) {
-        int dy = to.getY() - from.getY();
-        int dx = to.getX() - from.getX();
-        if (Math.abs(dy) > Math.abs(dx)) {
-            return dy > 0 ? AndroidKey.DPAD_DOWN : AndroidKey.DPAD_UP;
-        }
-        if (Math.abs(dx) > TOLERANCE_PX) {
-            return dx > 0 ? AndroidKey.DPAD_RIGHT : AndroidKey.DPAD_LEFT;
-        }
-        // Centers vertically aligned but not on target yet — step vertically.
-        return dy > 0 ? AndroidKey.DPAD_DOWN : AndroidKey.DPAD_UP;
     }
 
     private Rectangle rectOf(By by) {
