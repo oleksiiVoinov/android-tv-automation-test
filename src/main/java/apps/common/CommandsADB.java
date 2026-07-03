@@ -4,6 +4,7 @@ import io.qameta.allure.Step;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
@@ -82,6 +83,49 @@ public class CommandsADB {
 
     private boolean isNetworkDevice(String udid) {
         return udid != null && udid.contains(":");
+    }
+
+    /** Runs an adb command with a timeout and returns its combined stdout (empty on error/timeout). */
+    private String runAdbOutput(int seconds, String... args) {
+        Process process = null;
+        try {
+            String[] cmd = new String[args.length + 1];
+            cmd[0] = "adb";
+            System.arraycopy(args, 0, cmd, 1, args.length);
+            process = new ProcessBuilder(cmd).redirectErrorStream(true).start();
+            String out = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+            process.waitFor(seconds, TimeUnit.SECONDS);
+            return out;
+        } catch (Exception e) {
+            System.err.println("❌ adb output command failed: " + e.getMessage());
+            return "";
+        } finally {
+            if (process != null) {
+                process.destroyForcibly();
+            }
+        }
+    }
+
+    /**
+     * Ground-truth egress geolocation: makes an HTTP request FROM the device (raw HTTP over
+     * toybox `nc`, since curl/wget aren't present) to ip-api.com. Because the app's VPN covers
+     * all UIDs, the shell's traffic egresses through the tunnel too — so the returned IP/country
+     * is what the outside world actually sees for the device. Returns the raw JSON body.
+     * <p>
+     * HTTP (not HTTPS) because nc can't do TLS and ip-api.com's free tier is HTTP-only; this is a
+     * non-sensitive geo lookup, and the point is exactly that it travels through the tunnel.
+     */
+    @Step("Read device egress geo (through the tunnel) via on-device HTTP")
+    public String deviceEgressJson(String udid) {
+        String remote = "printf 'GET /json HTTP/1.0\\r\\nHost: ip-api.com\\r\\nUser-Agent: curl\\r\\n\\r\\n'"
+                + " | nc -w 8 ip-api.com 80";
+        String out = runAdbOutput(20, "-s", udid, "shell", remote);
+        int start = out.indexOf('{');
+        int end = out.lastIndexOf('}');
+        if (start < 0 || end <= start) {
+            throw new IllegalStateException("Could not read device egress JSON from ip-api.com. Raw output:\n" + out);
+        }
+        return out.substring(start, end + 1);
     }
 
     /** Runs a command with a hard timeout so a flaky adb call can't hang the run forever. */

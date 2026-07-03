@@ -1,5 +1,8 @@
 package apps.tv.pages;
 
+import apps.common.CommandsADB;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import driver.TestContext;
 import io.appium.java_client.android.nativekey.AndroidKey;
 import io.qameta.allure.Step;
@@ -72,7 +75,7 @@ public class ConnectTvPage extends TvBasePage {
         return this;
     }
 
-    @Step("Verify the VPN is connected (status CONNECTED and timer running)")
+    @Step("Verify the VPN reports connected in the UI (status CONNECTED + timer running)")
     public ConnectTvPage verifyConnected() {
         boolean connected = waitForText(connectStatus, STATUS_CONNECTED, Duration.ofSeconds(30));
         attachScreenToReport("After connect");
@@ -80,6 +83,41 @@ public class ConnectTvPage extends TvBasePage {
                 "VPN did not report CONNECTED within 30s. Current status: " + textOf(connectStatus));
         Assert.assertNotEquals(textOf(timeConnectedValue), TIME_IDLE,
                 "Connection timer is still idle (--:--:--) after connecting");
+        return this;
+    }
+
+    /**
+     * Strongest check: makes an HTTP request FROM the device (through the tunnel) and asserts the
+     * real egress country. Also cross-checks that the egress IP matches what the app displays,
+     * proving the app isn't reporting a stale/wrong IP. Requires the location to be {@code expectedCountry}.
+     */
+    @Step("Verify real egress through the tunnel resolves to {expectedCountry}")
+    public ConnectTvPage verifyRealEgress(String expectedCountry) {
+        verifyConnected();
+
+        String udid = testContext.getDevice().uDID;
+        String json = new CommandsADB().deviceEgressJson(udid);
+        JsonNode node;
+        try {
+            node = new ObjectMapper().readTree(json);
+        } catch (Exception e) {
+            throw new IllegalStateException("Unparseable egress JSON: " + json, e);
+        }
+
+        String status = node.path("status").asText();
+        String country = node.path("country").asText();
+        String egressIp = node.path("query").asText();
+        attachScreenToReport("Real egress: " + egressIp + " → " + country);
+
+        Assert.assertEquals(status, "success", "Device egress lookup failed: " + json);
+        Assert.assertTrue(country.equalsIgnoreCase(expectedCountry),
+                "Real egress country is '" + country + "' but expected '" + expectedCountry
+                        + "' (egress IP " + egressIp + ")");
+
+        // Cross-check: the IP the app shows must match the world-visible egress IP.
+        String appIp = textOf(originalIpValue);
+        Assert.assertEquals(appIp, egressIp,
+                "App shows VPN IP " + appIp + " but the real egress IP is " + egressIp);
         return this;
     }
 
