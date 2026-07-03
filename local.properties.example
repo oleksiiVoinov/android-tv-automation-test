@@ -7,6 +7,8 @@ environment=dev
 appiumHost=127.0.0.1
 appiumPort=4732
 manageAppium=false
+# Attach screen recording to Allure for ALL tests (failures always attach video).
+videoRecord=false
 
 # Premium staging test account used by the API sign-in precondition.
 # The TV welcome gate requires a premium account. Never commit real credentials.

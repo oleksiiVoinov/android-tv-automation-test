@@ -2,7 +2,6 @@ package apps.tv.pages;
 
 import apps.tv.api.TvWebAuth;
 import driver.TestContext;
-import io.appium.java_client.android.nativekey.AndroidKey;
 import io.qameta.allure.Step;
 import org.openqa.selenium.By;
 
@@ -40,7 +39,7 @@ public class TvSignInPage extends TvBasePage {
             return;
         }
 
-        dpad.focus(signInButton, AndroidKey.DPAD_DOWN, 3).center();
+        dpad.focusOnAndSelect(signInButton);
 
         String code = fluentVisibility(signInCode, Duration.ofSeconds(15)).getText().trim();
         System.out.println("📺 TV device code: " + code);

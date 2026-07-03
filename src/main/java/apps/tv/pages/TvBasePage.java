@@ -6,12 +6,14 @@ import io.qameta.allure.Allure;
 import io.qameta.allure.Step;
 import org.openqa.selenium.By;
 import org.openqa.selenium.OutputType;
+import org.openqa.selenium.Rectangle;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 
 /**
  * Common base for all Android TV page objects.
@@ -35,6 +37,23 @@ public abstract class TvBasePage extends Wait {
 
     protected boolean isPresent(By by) {
         return !appiumDriver.findElements(by).isEmpty();
+    }
+
+    /**
+     * Taps an element by the center of its {@code bounds} via a UiAutomator2 click gesture.
+     * Verified to work on Android TV (injected touch).
+     * <p>
+     * Kept as a spare / escape hatch only. Real test flows deliberately use D-pad
+     * ({@code dpad.focusOnAndSelect(...)}) to mirror how an actual user drives the TV with a
+     * remote — clicking coordinates bypasses the real focus/interaction path we want to cover.
+     */
+    @Step("Tap {target} (coordinate click)")
+    protected void tap(By target) {
+        Rectangle r = fluentPresenceOfElementLocated(target).getRect();
+        int cx = r.getX() + r.getWidth() / 2;
+        int cy = r.getY() + r.getHeight() / 2;
+        testContext.getAndroidDriver().executeScript(
+                "mobile: clickGesture", Map.of("x", cx, "y", cy));
     }
 
     @Step("Attach screenshot: {name}")

@@ -15,9 +15,11 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterSuite;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeSuite;
+import org.testng.annotations.Listeners;
 
 import java.time.Duration;
 
+@Listeners(ConfigRecordingListener.class)
 public class BaseTest {
     private static final AppiumConfig APPIUM_CONFIG = AppiumConfig.fromRuntimeConfig();
 
@@ -25,8 +27,10 @@ public class BaseTest {
     public TestContext testContext;
     public AppiumDriver appiumDriver;
 
-    @BeforeSuite(alwaysRun = true, description = "start appium if managed")
+    @BeforeSuite(alwaysRun = true, description = "ensure device online, then start appium if managed")
     public void beforeSuite() {
+        // Network adb to the TV box drops often — self-heal before the run.
+        new CommandsADB().ensureDeviceOnline(RuntimeConfig.getRequired("udid"), Duration.ofSeconds(30));
         APPIUM_CONFIG.startIfNeeded();
     }
 

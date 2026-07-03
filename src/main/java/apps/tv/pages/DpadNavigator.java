@@ -1,12 +1,15 @@
 package apps.tv.pages;
 
 import driver.TestContext;
+import io.appium.java_client.AppiumBy;
 import io.appium.java_client.android.AndroidDriver;
 import io.appium.java_client.android.nativekey.AndroidKey;
 import io.appium.java_client.android.nativekey.KeyEvent;
 import io.qameta.allure.Step;
 import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchElementException;
+import org.openqa.selenium.Point;
+import org.openqa.selenium.Rectangle;
 import org.openqa.selenium.WebElement;
 
 import java.time.Duration;
@@ -92,6 +95,104 @@ public class DpadNavigator {
     public DpadNavigator focusAndSelect(By target, AndroidKey direction, int maxSteps) {
         focus(target, direction, maxSteps);
         return center();
+    }
+
+    private static final int TOLERANCE_PX = 8;   // treat centers within this as aligned
+    private static final int MAX_MOVES = 25;      // hard cap on presses
+    private final By focusedSelector = AppiumBy.androidUIAutomator("new UiSelector().focused(true)");
+
+    /**
+     * Direction-free focus: figures out where to move by comparing the geometry
+     * ({@code bounds}) of the currently focused element and the target, and presses
+     * toward it — vertically first, then horizontally. Works from any starting focus
+     * and for 2D layouts (e.g. the protocol grid). Fails fast if focus stops moving
+     * (hit a wall / target unreachable), instead of spamming keys until a step cap.
+     */
+    @Step("Focus element {target} (auto direction)")
+    public DpadNavigator focusOn(By target) {
+        // Ensure the target exists in the hierarchy up front (clear error otherwise).
+        rectOf(target);
+
+        int stuck = 0;
+        for (int move = 0; move < MAX_MOVES; move++) {
+            if (isFocused(target)) {
+                return this;
+            }
+
+            Rectangle focused = focusedRect();
+            if (focused == null) {
+                // Nothing focused yet — nudge to give the screen a focus anchor.
+                press(AndroidKey.DPAD_DOWN);
+                continue;
+            }
+
+            Rectangle targetRect = rectOf(target);
+            AndroidKey direction = directionToward(center(focused), center(targetRect));
+
+            press(direction);
+
+            // Stuck detection: if focus didn't move after the press, we're wedged.
+            Rectangle after = focusedRect();
+            if (after != null && sameRect(focused, after)) {
+                if (++stuck >= 2) {
+                    throw new NoSuchElementException(
+                            "focusOn: focus stuck at " + rectSig(after) + " while seeking " + target
+                                    + " (wall reached or target not focusable)");
+                }
+            } else {
+                stuck = 0;
+            }
+        }
+
+        if (isFocused(target)) {
+            return this;
+        }
+        throw new NoSuchElementException("focusOn: could not focus " + target + " within " + MAX_MOVES + " moves");
+    }
+
+    @Step("Focus {target} (auto direction) and press OK")
+    public DpadNavigator focusOnAndSelect(By target) {
+        focusOn(target);
+        return center();
+    }
+
+    private AndroidKey directionToward(Point from, Point to) {
+        int dy = to.getY() - from.getY();
+        int dx = to.getX() - from.getX();
+        if (Math.abs(dy) > Math.abs(dx)) {
+            return dy > 0 ? AndroidKey.DPAD_DOWN : AndroidKey.DPAD_UP;
+        }
+        if (Math.abs(dx) > TOLERANCE_PX) {
+            return dx > 0 ? AndroidKey.DPAD_RIGHT : AndroidKey.DPAD_LEFT;
+        }
+        // Centers vertically aligned but not on target yet — step vertically.
+        return dy > 0 ? AndroidKey.DPAD_DOWN : AndroidKey.DPAD_UP;
+    }
+
+    private Rectangle rectOf(By by) {
+        return driver.findElement(by).getRect();
+    }
+
+    /** Rectangle of the element that currently holds focus, or null if none. */
+    private Rectangle focusedRect() {
+        try {
+            return driver.findElement(focusedSelector).getRect();
+        } catch (NoSuchElementException e) {
+            return null;
+        }
+    }
+
+    private Point center(Rectangle r) {
+        return new Point(r.getX() + r.getWidth() / 2, r.getY() + r.getHeight() / 2);
+    }
+
+    private boolean sameRect(Rectangle a, Rectangle b) {
+        return a.getX() == b.getX() && a.getY() == b.getY()
+                && a.getWidth() == b.getWidth() && a.getHeight() == b.getHeight();
+    }
+
+    private String rectSig(Rectangle r) {
+        return "[" + r.getX() + "," + r.getY() + " " + r.getWidth() + "x" + r.getHeight() + "]";
     }
 
     private void sleep(Duration duration) {

@@ -4,6 +4,8 @@ import io.qameta.allure.Step;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 
 public class CommandsADB {
 
@@ -76,6 +78,81 @@ public class CommandsADB {
             System.err.println("❌ Error checking app installation: " + e.getMessage());
             return false;
         }
+    }
+
+    private boolean isNetworkDevice(String udid) {
+        return udid != null && udid.contains(":");
+    }
+
+    /** Runs a command with a hard timeout so a flaky adb call can't hang the run forever. */
+    private void execWithTimeout(String command, int seconds, String successMessage) {
+        Process process = null;
+        try {
+            process = Runtime.getRuntime().exec(command);
+            if (!process.waitFor(seconds, TimeUnit.SECONDS)) {
+                process.destroyForcibly();
+                System.err.println("⏱️ adb command timed out (" + seconds + "s): " + command);
+                return;
+            }
+            logSuccess(successMessage);
+        } catch (Exception e) {
+            System.err.println("❌ Exception during command: " + command + " → " + e.getMessage());
+        } finally {
+            if (process != null) {
+                process.destroy();
+            }
+        }
+    }
+
+    /**
+     * Clean restart of the local adb server + reconnect a network device.
+     * Fixes the common "protocol fault / Connection reset by peer" broken-server state.
+     */
+    @Step("Reconnect network adb device {udid}")
+    public CommandsADB reconnect(String udid) {
+        execWithTimeout("adb kill-server", 10, "adb server killed");
+        execWithTimeout("adb start-server", 15, "adb server started");
+        if (isNetworkDevice(udid)) {
+            execWithTimeout("adb connect " + udid, 10, "adb connect " + udid);
+        }
+        return this;
+    }
+
+    /**
+     * Ensures the device is online, self-healing a dropped network adb connection.
+     * Cheap path first (plain connect), then a full server restart, polling until the timeout.
+     */
+    @Step("Ensure device {udid} is online")
+    public void ensureDeviceOnline(String udid, Duration timeout) {
+        if (isDeviceAlive(udid)) {
+            return;
+        }
+        if (isNetworkDevice(udid)) {
+            execWithTimeout("adb connect " + udid, 10, "adb connect " + udid);
+            if (isDeviceAlive(udid)) {
+                return;
+            }
+            reconnect(udid); // escalate: kill/start-server + connect
+        }
+
+        long deadline = System.currentTimeMillis() + timeout.toMillis();
+        while (System.currentTimeMillis() < deadline) {
+            if (isDeviceAlive(udid)) {
+                return;
+            }
+            if (isNetworkDevice(udid)) {
+                execWithTimeout("adb connect " + udid, 10, "retry adb connect " + udid);
+            }
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(e);
+            }
+        }
+        throw new IllegalStateException(
+                "Device " + udid + " is not online after " + timeout.getSeconds() + "s. "
+                        + "Is the box awake / on the network? Check its IP in Settings → Network.");
     }
 
     public boolean isDeviceAlive(String udid) {

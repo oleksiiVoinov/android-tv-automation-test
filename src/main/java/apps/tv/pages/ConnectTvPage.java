@@ -54,7 +54,7 @@ public class ConnectTvPage extends TvBasePage {
 
     @Step("Open location list, wait for servers to load, then go back")
     public ConnectTvPage openLocationListAndReturn() {
-        dpad.focus(locationSelector, AndroidKey.DPAD_DOWN, 5).center();
+        dpad.focusOnAndSelect(locationSelector);
 
         // Server list screen — wait until the server rows have loaded.
         fluentVisibility(serverListTitle, Duration.ofSeconds(20));
@@ -68,7 +68,7 @@ public class ConnectTvPage extends TvBasePage {
 
     @Step("Press Connect on the TV")
     public ConnectTvPage pressConnect() {
-        dpad.focus(connectButton, AndroidKey.DPAD_UP, 5).center();
+        dpad.focusOnAndSelect(connectButton);
         return this;
     }
 
@@ -85,7 +85,7 @@ public class ConnectTvPage extends TvBasePage {
 
     @Step("Disconnect the VPN")
     public ConnectTvPage disconnect() {
-        dpad.focus(connectButton, AndroidKey.DPAD_UP, 5).center();
+        dpad.focusOnAndSelect(connectButton);
         waitForText(connectStatus, STATUS_DISCONNECTED, Duration.ofSeconds(15));
         return this;
     }
