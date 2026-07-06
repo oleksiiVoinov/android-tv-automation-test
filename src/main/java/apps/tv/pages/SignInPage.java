@@ -40,18 +40,10 @@ public class SignInPage extends BasePage {
         return isPresent(connectButton);
     }
 
-    /** Robustly reach the welcome screen: back out of sign-in/dialogs until it appears. */
+    /** Robustly reach the welcome screen — screen detection + steps live in {@link Navigator}. */
     @Step("Go to the welcome screen")
     public SignInPage navigateToWelcome() {
-        for (int attempt = 0; attempt < 5; attempt++) {
-            if (isDisplayed(signInButton)) {
-                return this;
-            }
-            dpad.back();
-            pause(Duration.ofSeconds(1));
-        }
-        fluentVisibility(signInButton, Duration.ofSeconds(10));
-        return this;
+        return new Navigator(testContext).toWelcome();
     }
 
     @Step("Verify welcome screen elements are displayed")

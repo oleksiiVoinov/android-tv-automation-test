@@ -4,7 +4,6 @@ import apps.common.CommandsADB;
 import apps.tv.api.serverlist.ServerV7;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import configs.RuntimeConfig;
 import driver.TestContext;
 import io.appium.java_client.AppiumBy;
 import io.qameta.allure.Step;
@@ -34,10 +33,6 @@ public class MainScreenPage extends BasePage {
     public final By serverListTitle = By.id(PKG + "tv_title");   // "Select Server Location"
     public final By serverName = By.id(PKG + "tv_name");         // a server row — signals the list loaded
 
-    // Login pages (welcome / sign-in) — used to auto-login on the way to the main screen.
-    public final By welcomeSignInButton = By.id(PKG + "btn_sign_in");
-    public final By signInCode = By.id(PKG + "tv_sign_in_code");
-
     // "Do you want to reconnect with the new protocol?" dialog (shown when changing protocol while connected)
     public final By reconnectDialogTitle = By.id(PKG + "tv_dialog_title");
     public final By reconnectOkButton = By.id(PKG + "action_ok_btn");       // "Reconnect" (focused by default)
@@ -56,37 +51,8 @@ public class MainScreenPage extends BasePage {
 
     @Step("Go to main screen")
     public MainScreenPage navigateToMainScreen() {
-        // Robustly reach the main connect screen from wherever the app is (server list, search,
-        // sort dialog, reconnect prompt, etc.) — mirrors the phone Navigator idea.
-        for (int attempt = 0; attempt < 8; attempt++) {
-            if (waitForConnectButton(Duration.ofSeconds(2))) {
-                return this;
-            }
-            // If the app is on the login pages (welcome / sign-in), log in via the account API.
-            if (isPresent(welcomeSignInButton) || isPresent(signInCode)) {
-                new SignInPage(testContext).ensureSignedIn(
-                        RuntimeConfig.getRequired("tvEmail"),
-                        RuntimeConfig.getRequired("tvPassword"));
-                continue;
-            }
-            // Dismiss any modal dialog (e.g. "reconnect with new protocol?").
-            if (isPresent(dialogCancelButton)) {
-                dpad.focusOnAndSelect(dialogCancelButton);
-                continue;
-            }
-            dpad.back();
-        }
-        fluentVisibility(connectButton, Duration.ofSeconds(15)); // final attempt → clear failure
-        return this;
-    }
-
-    private boolean waitForConnectButton(Duration timeout) {
-        try {
-            fluentVisibility(connectButton, timeout);
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
+        // Screen detection + per-page steps live in the shared Navigator (mirrors the phone framework).
+        return new Navigator(testContext).toMainScreen();
     }
 
     private By protocolLocator(Protocols protocol) {
@@ -138,6 +104,14 @@ public class MainScreenPage extends BasePage {
         Assert.assertEquals(status, STATUS_DISCONNECTED,
                 "Expected the app to start disconnected, but status was: " + status);
         return this;
+    }
+
+    @Step("Open the settings menu (gear)")
+    public SettingsMenuPage openSettingsMenu() {
+        dpad.focusOnAndSelect(settingsButton);
+        SettingsMenuPage menu = new SettingsMenuPage(testContext);
+        menu.fluentVisibility(menu.helpSupport, Duration.ofSeconds(15));
+        return menu;
     }
 
     @Step("Open the server list")

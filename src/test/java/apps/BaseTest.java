@@ -47,6 +47,8 @@ public class BaseTest {
         // NOTE: no auto sign-in here. Reaching the main screen — logging in from the welcome/sign-in
         // pages if needed — is handled by MainScreen.navigateToMainScreen().
         System.out.println("🧪 Starting TV test class execution...");
+        new CommandsADB()
+                .allowVpnConnection(device.app.appPackage, device.uDID);
     }
 
     protected String getAppiumHost() {
