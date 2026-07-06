@@ -20,12 +20,12 @@ import java.util.Map;
  * Holds the shared {@link DpadNavigator}, waiting helpers and Allure screenshot support.
  * Mirrors the phone framework's BasePage, but interactions go through the D-pad instead of touch.
  */
-public abstract class TvBasePage extends Wait {
+public abstract class BasePage extends Wait {
 
     public final AppiumDriver appiumDriver;
     protected final DpadNavigator dpad;
 
-    protected TvBasePage(TestContext testContext) {
+    protected BasePage(TestContext testContext) {
         super(testContext);
         this.appiumDriver = testContext.getAppiumDriver();
         this.dpad = new DpadNavigator(testContext);

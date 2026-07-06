@@ -1,7 +1,7 @@
 package configs.app;
 
-public class TvVpnApp extends App {
-    public TvVpnApp() {
+public class VpnApp extends App {
+    public VpnApp() {
         this.bundleId = "mobi.mobilejump.freevpn";
         this.name = "superVpnTv";
         this.appPackage = "com.free.vpn.super.hotspot.open";

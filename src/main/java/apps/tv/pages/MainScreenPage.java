@@ -4,6 +4,7 @@ import apps.common.CommandsADB;
 import apps.tv.api.serverlist.ServerV7;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import configs.RuntimeConfig;
 import driver.TestContext;
 import io.appium.java_client.AppiumBy;
 import io.qameta.allure.Step;
@@ -18,7 +19,7 @@ import java.util.List;
  * protocol grid (Auto / IKEv2 / OpenVPN) and the connection info cards.
  * Locators verified against a live device dump.
  */
-public class MainScreen extends TvBasePage {
+public class MainScreenPage extends BasePage {
 
     private static final String PKG = "com.free.vpn.super.hotspot.open:id/";
 
@@ -33,6 +34,10 @@ public class MainScreen extends TvBasePage {
     public final By serverListTitle = By.id(PKG + "tv_title");   // "Select Server Location"
     public final By serverName = By.id(PKG + "tv_name");         // a server row — signals the list loaded
 
+    // Login pages (welcome / sign-in) — used to auto-login on the way to the main screen.
+    public final By welcomeSignInButton = By.id(PKG + "btn_sign_in");
+    public final By signInCode = By.id(PKG + "tv_sign_in_code");
+
     // "Do you want to reconnect with the new protocol?" dialog (shown when changing protocol while connected)
     public final By reconnectDialogTitle = By.id(PKG + "tv_dialog_title");
     public final By reconnectOkButton = By.id(PKG + "action_ok_btn");       // "Reconnect" (focused by default)
@@ -45,22 +50,29 @@ public class MainScreen extends TvBasePage {
     private static final String STATUS_DISCONNECTED = "CONNECT";
     private static final String TIME_IDLE = "--:--:--";
 
-    public MainScreen(TestContext testContext) {
+    public MainScreenPage(TestContext testContext) {
         super(testContext);
     }
 
     @Step("Go to main screen")
-    public MainScreen navigateToMainScreen() {
+    public MainScreenPage navigateToMainScreen() {
         // Robustly reach the main connect screen from wherever the app is (server list, search,
         // sort dialog, reconnect prompt, etc.) — mirrors the phone Navigator idea.
         for (int attempt = 0; attempt < 8; attempt++) {
-            // Dismiss any modal dialog first (e.g. "reconnect with new protocol?").
+            if (waitForConnectButton(Duration.ofSeconds(2))) {
+                return this;
+            }
+            // If the app is on the login pages (welcome / sign-in), log in via the account API.
+            if (isPresent(welcomeSignInButton) || isPresent(signInCode)) {
+                new SignInPage(testContext).ensureSignedIn(
+                        RuntimeConfig.getRequired("tvEmail"),
+                        RuntimeConfig.getRequired("tvPassword"));
+                continue;
+            }
+            // Dismiss any modal dialog (e.g. "reconnect with new protocol?").
             if (isPresent(dialogCancelButton)) {
                 dpad.focusOnAndSelect(dialogCancelButton);
                 continue;
-            }
-            if (waitForConnectButton(Duration.ofSeconds(2))) {
-                return this;
             }
             dpad.back();
         }
@@ -82,7 +94,7 @@ public class MainScreen extends TvBasePage {
     }
 
     @Step("Verify all main screen elements are displayed")
-    public MainScreen verifyMainScreenDisplayed() {
+    public MainScreenPage verifyMainScreenDisplayed() {
         List<By> elements = List.of(
                 appName, settingsButton, connectButton, connectStatus,
                 locationSelector, fastestServerLabel, protocolGrid,
@@ -98,7 +110,7 @@ public class MainScreen extends TvBasePage {
     }
 
     @Step("Select protocol {protocol}")
-    public MainScreen selectProtocol(Protocols protocol) {
+    public MainScreenPage selectProtocol(Protocols protocol) {
         dpad.focusOnAndSelect(protocolLocator(protocol));
         confirmReconnectIfPresent();
         return this;
@@ -110,7 +122,7 @@ public class MainScreen extends TvBasePage {
      * No-op when disconnected (no dialog appears).
      */
     @Step("Confirm reconnect-with-new-protocol dialog if present")
-    public MainScreen confirmReconnectIfPresent() {
+    public MainScreenPage confirmReconnectIfPresent() {
         try {
             fluentVisibility(reconnectDialogTitle, Duration.ofSeconds(2));
         } catch (Exception noDialog) {
@@ -121,7 +133,7 @@ public class MainScreen extends TvBasePage {
     }
 
     @Step("Verify the app starts disconnected")
-    public MainScreen verifyDisconnected() {
+    public MainScreenPage verifyDisconnected() {
         String status = textOf(connectStatus);
         Assert.assertEquals(status, STATUS_DISCONNECTED,
                 "Expected the app to start disconnected, but status was: " + status);
@@ -129,15 +141,15 @@ public class MainScreen extends TvBasePage {
     }
 
     @Step("Open the server list")
-    public ServerListTvPage openServerList() {
+    public ServerListPage openServerList() {
         dpad.focusOnAndSelect(locationSelector);
-        ServerListTvPage page = new ServerListTvPage(testContext);
+        ServerListPage page = new ServerListPage(testContext);
         page.fluentVisibility(page.title, Duration.ofSeconds(15));
         return page;
     }
 
     @Step("Open location list, wait for servers to load, then go back")
-    public MainScreen openLocationListAndReturn() {
+    public MainScreenPage openLocationListAndReturn() {
         dpad.focusOnAndSelect(locationSelector);
 
         // Server list screen — wait until the server rows have loaded.
@@ -151,13 +163,13 @@ public class MainScreen extends TvBasePage {
     }
 
     @Step("Press Connect on the TV")
-    public MainScreen pressConnect() {
+    public MainScreenPage pressConnect() {
         dpad.focusOnAndSelect(connectButton);
         return this;
     }
 
     @Step("Verify the VPN reports connected in the UI (status CONNECTED + timer running)")
-    public MainScreen verifyConnected() {
+    public MainScreenPage verifyConnected() {
         boolean connected = waitForText(connectStatus, STATUS_CONNECTED, Duration.ofSeconds(30));
         attachScreenToReport("After connect");
         Assert.assertTrue(connected,
@@ -173,7 +185,7 @@ public class MainScreen extends TvBasePage {
      * proving the app isn't reporting a stale/wrong IP. Requires the location to be {@code expectedCountry}.
      */
     @Step("Verify real egress through the tunnel resolves to {expectedCountry}")
-    public MainScreen verifyRealEgress(String expectedCountry) {
+    public MainScreenPage verifyRealEgress(String expectedCountry) {
         JsonNode node = fetchEgress();
         String country = node.path("country").asText();
         String egressIp = node.path("query").asText();
@@ -191,7 +203,7 @@ public class MainScreen extends TvBasePage {
      * compares by ISO country code (robust for e.g. US cities). Used by server-list selection tests.
      */
     @Step("Verify real egress matches selected server {server}")
-    public MainScreen verifyRealEgress(ServerV7 server) {
+    public MainScreenPage verifyRealEgress(ServerV7 server) {
         JsonNode node = fetchEgress();
         String egressCode = node.path("countryCode").asText();
         String egressIp = node.path("query").asText();
@@ -226,7 +238,7 @@ public class MainScreen extends TvBasePage {
     }
 
     @Step("Disconnect the VPN")
-    public MainScreen disconnect() {
+    public MainScreenPage disconnect() {
         dpad.focusOnAndSelect(connectButton);
         waitForText(connectStatus, STATUS_DISCONNECTED, Duration.ofSeconds(15));
         return this;

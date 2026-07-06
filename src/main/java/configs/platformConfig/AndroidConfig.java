@@ -10,7 +10,7 @@ import java.net.URL;
  * The app is assumed to be already installed on the box (installed manually or by CI via adb).
  * No auto-reset between tests: TV app state is managed by @BeforeClass/@AfterClass, mirroring the phone framework.
  */
-public class AndroidTvConfig {
+public class AndroidConfig {
 
     public AndroidContext initDriver(Device device, String host, String port) throws Exception {
         device.capabilities.setCapability("appium:noReset", true);

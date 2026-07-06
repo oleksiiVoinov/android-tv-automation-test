@@ -24,13 +24,13 @@ import static io.restassured.RestAssured.given;
  * Config keys (System props / local.properties): {@code serverListKey} (required), {@code region}
  * (default {@code UA}). Base URL comes from the environment ({@code dev-api.mobilejump.mobi}).
  */
-public class TvServerList {
+public class ServerList {
 
     private static final String TVOS_APP_SUFFIX = "_tvos";
 
     public final List<ServerV7> vipServers;
 
-    public TvServerList(TestContext testContext) throws Exception {
+    public ServerList(TestContext testContext) throws Exception {
         String response = fetchAndDecode(testContext);
         this.vipServers = parseVipServers(response).stream()
                 .filter(ServerV7::hasAllRequiredFields)

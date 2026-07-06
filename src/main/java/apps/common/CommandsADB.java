@@ -63,6 +63,25 @@ public class CommandsADB {
         return executeADBCommand(command, "🛑 App " + packageName + " was closed");
     }
 
+    @Step("Uninstall app")
+    public CommandsADB removeApp(String packageName, String udid) {
+        String command = "adb -s " + udid + " uninstall " + packageName;
+        return executeADBCommand(command, "📦 App " + packageName + " uninstalled");
+    }
+
+    @Step("Install APK {apkPath}")
+    public CommandsADB installApp(String apkPath, String udid) {
+        // Use ProcessBuilder args (runAdbOutput) — no shell quoting issues with the path — and
+        // capture adb's real output ("Success" / "Failure [INSTALL_FAILED_...]").
+        // -r reinstall keeping data if present, -g grant all runtime permissions.
+        String out = runAdbOutput(120, "-s", udid, "install", "-r", "-g", apkPath);
+        System.out.println("📥 adb install: " + out.trim());
+        if (!out.contains("Success")) {
+            System.err.println("❌ APK install did not report Success");
+        }
+        return this;
+    }
+
     public boolean isAppInstalled(String packageName, String udid) {
         try {
             Process process = Runtime.getRuntime().exec("adb -s " + udid + " shell pm list packages");

@@ -1,7 +1,7 @@
 package apps.tv.regression;
 
 import apps.BaseTest;
-import apps.tv.pages.MainScreen;
+import apps.tv.pages.MainScreenPage;
 import io.qameta.allure.Description;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Severity;
@@ -10,7 +10,7 @@ import io.qameta.allure.Story;
 import org.testng.annotations.Test;
 
 @Epic("Android TV")
-public class MainScreenTest extends BaseTest {
+public class MainScreenPageTest extends BaseTest {
 
     @Test(priority = 1, description = "validation feature TV main screen")
     @Story("2. Main screen")
@@ -23,7 +23,7 @@ public class MainScreenTest extends BaseTest {
             2. verify all elements are displayed: app name, settings, connect button + status,
                location selector, protocol grid (Auto / IKEv2 / OpenVPN), IP and time cards""")
     public void validation() {
-        new MainScreen(testContext)
+        new MainScreenPage(testContext)
                 .navigateToMainScreen()
                 .verifyMainScreenDisplayed();
     }

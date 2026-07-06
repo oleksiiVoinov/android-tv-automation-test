@@ -32,7 +32,7 @@ import static io.restassured.RestAssured.given;
  * </ol>
  * After authorize succeeds, the TV app's polling completes and it lands on the main screen.
  */
-public class TvWebAuth {
+public class WebAuth {
 
     // Staging (dev) RSA public key — same value the web frontend / phone WebPlatform uses.
     private static final String DEV_PUBLIC_KEY_PEM =
@@ -49,14 +49,14 @@ public class TvWebAuth {
     private final String publicKeyPem;
     private final ObjectMapper mapper = new ObjectMapper();
 
-    public TvWebAuth(String baseUrl, String publicKeyPem) {
+    public WebAuth(String baseUrl, String publicKeyPem) {
         this.baseUrl = baseUrl.replaceAll("/+$", "");
         this.publicKeyPem = publicKeyPem;
     }
 
     /** Staging/dev account backend. */
-    public static TvWebAuth dev() {
-        return new TvWebAuth("https://web-frontend-staging.frontend-qaaccount.superuntest.net", DEV_PUBLIC_KEY_PEM);
+    public static WebAuth dev() {
+        return new WebAuth("https://web-frontend-staging.frontend-qaaccount.superuntest.net", DEV_PUBLIC_KEY_PEM);
     }
 
     /** Full flow: authenticate the account, then authorize the device code shown on the TV. */

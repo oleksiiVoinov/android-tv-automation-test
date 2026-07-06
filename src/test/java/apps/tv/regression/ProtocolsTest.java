@@ -2,8 +2,8 @@ package apps.tv.regression;
 
 import apps.BaseTest;
 import apps.tv.api.serverlist.ServerV7;
-import apps.tv.api.serverlist.TvServerList;
-import apps.tv.pages.MainScreen;
+import apps.tv.api.serverlist.ServerList;
+import apps.tv.pages.MainScreenPage;
 import apps.tv.pages.Protocols;
 import io.qameta.allure.*;
 import org.testng.annotations.BeforeClass;
@@ -18,8 +18,8 @@ public class ProtocolsTest extends BaseTest {
     @BeforeClass()
     public void precondition() throws Exception {
         // testContext is ready only here (@BeforeClass), not at field-init time.
-        server = new TvServerList(testContext).getRandomNonUsServer();
-        new MainScreen(testContext)
+        server = new ServerList(testContext).getRandomNonUsServer();
+        new MainScreenPage(testContext)
                 .navigateToMainScreen()
                 .openServerList()
                 .selectServer(server);
@@ -50,7 +50,7 @@ public class ProtocolsTest extends BaseTest {
             4. verify the real egress country matches the selected server
             5. disconnect (leave a clean state for the next protocol)""")
     public void checkProtocol(Protocols protocol) {
-        new MainScreen(testContext)
+        new MainScreenPage(testContext)
                 .selectProtocol(protocol)
                 .verifyConnected()
                 .verifyRealEgress(server)

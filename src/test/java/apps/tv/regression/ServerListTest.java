@@ -2,9 +2,9 @@ package apps.tv.regression;
 
 import apps.BaseTest;
 import apps.tv.api.serverlist.ServerV7;
-import apps.tv.api.serverlist.TvServerList;
-import apps.tv.pages.MainScreen;
-import apps.tv.pages.ServerListTvPage;
+import apps.tv.api.serverlist.ServerList;
+import apps.tv.pages.MainScreenPage;
+import apps.tv.pages.ServerListPage;
 import io.qameta.allure.*;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
@@ -13,12 +13,12 @@ import org.testng.annotations.Test;
 @Epic("Android TV")
 public class ServerListTest extends BaseTest {
 
-    ServerListTvPage list;
+    ServerListPage list;
 
     @Story("4. Server List")
     @BeforeClass()
     public void precondition() {
-        list = new MainScreen(testContext)
+        list = new MainScreenPage(testContext)
                 .navigateToMainScreen()
                 .openServerList();
     }
@@ -34,7 +34,7 @@ public class ServerListTest extends BaseTest {
             2. open the server list (location selector)
             3. verify title, search, sort and server rows are displayed""")
     public void validation() {
-        new ServerListTvPage(testContext).verifyDisplayed();
+        new ServerListPage(testContext).verifyDisplayed();
     }
 
     @Test(priority = 2, description = "change server list sorting")
@@ -48,12 +48,12 @@ public class ServerListTest extends BaseTest {
             2. sort A - Z, verify the sort label
             3. sort Z - A, verify the sort label""")
     public void sortServer() {
-        list.sortBy(ServerListTvPage.Sort.A_TO_Z);
-        Assert.assertEquals(list.currentSortMode(), ServerListTvPage.Sort.A_TO_Z.label,
+        list.sortBy(ServerListPage.Sort.A_TO_Z);
+        Assert.assertEquals(list.currentSortMode(), ServerListPage.Sort.A_TO_Z.label,
                 "Sort mode did not switch to A - Z");
 
-        list.sortBy(ServerListTvPage.Sort.Z_TO_A);
-        Assert.assertEquals(list.currentSortMode(), ServerListTvPage.Sort.Z_TO_A.label,
+        list.sortBy(ServerListPage.Sort.Z_TO_A);
+        Assert.assertEquals(list.currentSortMode(), ServerListPage.Sort.Z_TO_A.label,
                 "Sort mode did not switch to Z - A");
     }
 
@@ -70,7 +70,7 @@ public class ServerListTest extends BaseTest {
             4. verify the app connects (redirect to main, status CONNECTED)""")
     public void searchServer() throws Exception {
         // Non-US: US clusters show as "US - City" in the UI, which diverges from the country name.
-        ServerV7 server = new TvServerList(testContext).getRandomNonUsServer();
+        ServerV7 server = new ServerList(testContext).getRandomNonUsServer();
         String country = server.getLocalizedCountryName();
 
         list.search(country)

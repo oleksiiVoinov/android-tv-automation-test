@@ -7,10 +7,12 @@ import io.qameta.allure.Step;
 import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.Rectangle;
+import org.openqa.selenium.WebElement;
 import org.testng.Assert;
 
 import java.time.Duration;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -19,7 +21,7 @@ import java.util.stream.Collectors;
  * Locators verified on device. Interaction is D-pad driven; selecting a server connects and
  * redirects back to the main screen.
  */
-public class ServerListTvPage extends TvBasePage {
+public class ServerListPage extends BasePage {
 
     private static final String PKG = "com.free.vpn.super.hotspot.open:id/";
     private static final int MAX_LIST_STEPS = 150;   // scrolling the full server list (long)
@@ -42,7 +44,9 @@ public class ServerListTvPage extends TvBasePage {
     private final By connectButton = By.id(PKG + "tvConnectButton");
     private final By search_result = By.id(PKG + "rv_server_search_results");
 
-    /** Sort options in the sort dialog. */
+    /**
+     * Sort options in the sort dialog.
+     */
     public enum Sort {
         FASTEST("tv_sort_fastest", "Fastest"),
         A_TO_Z("tv_sort_a_to_z", "A - Z"),
@@ -57,12 +61,12 @@ public class ServerListTvPage extends TvBasePage {
         }
     }
 
-    public ServerListTvPage(TestContext testContext) {
+    public ServerListPage(TestContext testContext) {
         super(testContext);
     }
 
     @Step("Verify server list screen is displayed")
-    public ServerListTvPage verifyDisplayed() {
+    public ServerListPage verifyDisplayed() {
         Assert.assertEquals(textOf(title), "Select Server Location", "Wrong server list title");
         Assert.assertTrue(isDisplayed(searchIcon), "Search icon not displayed");
         Assert.assertTrue(isDisplayed(sortContainer), "Sort control not displayed");
@@ -85,20 +89,21 @@ public class ServerListTvPage extends TvBasePage {
      * Selects the given API server. "ALL Servers" is grouped by country cluster, so we open the
      * cluster (by country name) and then pick the exact server inside it.
      */
-    @Step("Select server {server}")
-    public MainScreen selectServer(ServerV7 server) {
-        scrollToRow(server.getCountryName());   // cluster, e.g. "Australia"
+    public MainScreenPage selectServer(ServerV7 server) {
+        selectCluster(server.getCountryName());   // cluster, e.g. "Australia"
         dpad.center();                           // expand the cluster
         pause(Duration.ofSeconds(1));
-        scrollToRow(server.getAliasName());      // server inside, e.g. "Australia - 2"
+        selectAliasName(server.getAliasName());      // server inside, e.g. "Australia - 2"
         dpad.center();                           // select → connects, redirect to main
         return waitForMainScreen();
     }
 
-    /** Selects a single row by its visible text (flat list — no cluster to open). */
+    /**
+     * Selects a single row by its visible text (flat list — no cluster to open).
+     */
     @Step("Select row {name} from the list")
-    public MainScreen selectServer(String name) {
-        scrollToRow(name);
+    public MainScreenPage selectServer(String name) {
+        selectCluster(name);
         dpad.center();
         return waitForMainScreen();
     }
@@ -111,7 +116,8 @@ public class ServerListTvPage extends TvBasePage {
      * a RecyclerView keeps the highlight at a fixed screen position and scrolls content underneath,
      * so bounds stay constant while we're actually advancing.
      */
-    private void scrollToRow(String text) {
+    @Step("Select cluster {server}")
+    private void selectCluster(String text) {
         System.out.println("🔎 scrollToRow: seeking '" + text + "'");
         By exact = AppiumBy.androidUIAutomator("new UiSelector().text(\"" + text + "\")");
         Set<String> seenWindows = new HashSet<>();
@@ -140,7 +146,33 @@ public class ServerListTvPage extends TvBasePage {
         throw new NoSuchElementException("Could not find server '" + text + "' in the server list");
     }
 
-    /** Bounds of the currently focused element as a string (part of the anti-cycle signature). */
+    @Step("Select server {server}")
+    private void selectAliasName(String text) {
+        List<WebElement> elementList = appiumDriver
+                .findElement(By.id("com.free.vpn.super.hotspot.open:id/server_popup_items_container"))
+                .findElements(By.className("android.widget.TextView"));
+
+        for (int i = 0; i < elementList.size(); i++) {
+            if (elementList.get(0).getText().equals(text)) {
+                return;
+            } else {
+                elementList = appiumDriver
+                        .findElement(By.id("com.free.vpn.super.hotspot.open:id/server_popup_items_container"))
+                        .findElements(By.className("android.widget.TextView"));
+                String isFocused = elementList.get(i).getAttribute("focused");
+                if (elementList.get(i).getText().equals(text) && isFocused.equals("true")) {
+                    return;
+                } else {
+                    dpad.down();
+                }
+            }
+        }
+        throw new NoSuchElementException("Could not find server '" + text + "' in the server list");
+    }
+
+    /**
+     * Bounds of the currently focused element as a string (part of the anti-cycle signature).
+     */
     private String focusedBounds() {
         var els = appiumDriver.findElements(AppiumBy.androidUIAutomator("new UiSelector().focused(true)"));
         if (els.isEmpty()) {
@@ -150,7 +182,9 @@ public class ServerListTvPage extends TvBasePage {
         return r.getX() + "," + r.getY() + "," + r.getWidth() + "x" + r.getHeight();
     }
 
-    /** Signature of everything currently visible (all TextView texts) — used to detect list wrap/end. */
+    /**
+     * Signature of everything currently visible (all TextView texts) — used to detect list wrap/end.
+     */
     private String visibleWindow() {
         return appiumDriver.findElements(AppiumBy.className("android.widget.TextView")).stream()
                 .map(e -> {
@@ -163,7 +197,9 @@ public class ServerListTvPage extends TvBasePage {
                 .collect(Collectors.joining("|"));
     }
 
-    /** Text of the first TextView inside the currently focused row (its name), or null. */
+    /**
+     * Text of the first TextView inside the currently focused row (its name), or null.
+     */
     private String focusedRowText() {
         By loc = AppiumBy.androidUIAutomator(
                 "new UiSelector().focused(true).childSelector(new UiSelector().className(\"android.widget.TextView\"))");
@@ -174,7 +210,7 @@ public class ServerListTvPage extends TvBasePage {
     // ---- Search ----
 
     @Step("Search servers for '{query}'")
-    public ServerListTvPage search(String query) {
+    public ServerListPage search(String query) {
         dpad.focusOnAndSelect(searchIcon);
         fluentVisibility(searchField, Duration.ofSeconds(10));
         testContext.getAndroidDriver().findElement(searchField).sendKeys(query);
@@ -183,9 +219,11 @@ public class ServerListTvPage extends TvBasePage {
         return this;
     }
 
-    /** Selects a search result by name (moves focus into the results list first). */
+    /**
+     * Selects a search result by name (moves focus into the results list first).
+     */
     @Step("Select search result {name}")
-    public MainScreen selectSearchResult(String name) {
+    public MainScreenPage selectSearchResult(String name) {
         String previous = null;
         for (int step = 0; step < MAX_SEARCH_STEPS; step++) {
             dpad.down(); // from the field into the results, then row by row
@@ -203,7 +241,7 @@ public class ServerListTvPage extends TvBasePage {
     }
 
     @Step("Select search result {name}")
-    public MainScreen selectSearchResult() throws InterruptedException {
+    public MainScreenPage selectSearchResult() throws InterruptedException {
         tap(search_result);
         pause(Duration.ofSeconds(1));
         tap(search_result);
@@ -213,7 +251,7 @@ public class ServerListTvPage extends TvBasePage {
     // ---- Sort ----
 
     @Step("Sort servers by {mode}")
-    public ServerListTvPage sortBy(Sort mode) {
+    public ServerListPage sortBy(Sort mode) {
         dpad.focusOnAndSelect(sortContainer);
         fluentVisibility(mode.locator, Duration.ofSeconds(10));
         dpad.focusOnAndSelect(mode.locator);
@@ -224,7 +262,9 @@ public class ServerListTvPage extends TvBasePage {
 
     // ---- helpers ----
 
-    /** Text of {@code childId} inside the currently focused row, or null if none. */
+    /**
+     * Text of {@code childId} inside the currently focused row, or null if none.
+     */
     private String focusedName(String childId) {
         By locator = AppiumBy.androidUIAutomator(
                 "new UiSelector().focused(true).childSelector(new UiSelector().resourceId(\"" + childId + "\"))");
@@ -232,8 +272,8 @@ public class ServerListTvPage extends TvBasePage {
         return elements.isEmpty() ? null : elements.get(0).getText().trim();
     }
 
-    private MainScreen waitForMainScreen() {
-        MainScreen main = new MainScreen(testContext);
+    private MainScreenPage waitForMainScreen() {
+        MainScreenPage main = new MainScreenPage(testContext);
         fluentVisibility(connectButton, Duration.ofSeconds(30));
         return main;
     }

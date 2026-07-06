@@ -2,8 +2,10 @@
 <suite name="Android TV - Regression">
     <test name="tv regression">
         <classes>
-            <class name="apps.tv.regression.ConnectionSmokeTest"/>
-            <class name="apps.tv.regression.MainScreenTest"/>
+            <class name="apps.tv.regression.ReinstallTest"/>
+            <class name="apps.tv.regression.SignUpTest"/>
+            <class name="apps.tv.regression.LoginTest"/>
+            <class name="apps.tv.regression.MainScreenPageTest"/>
             <class name="apps.tv.regression.ProtocolsTest"/>
             <class name="apps.tv.regression.ServerListTest"/>
         </classes>

@@ -12,7 +12,7 @@ import org.testng.annotations.Test;
  * </pre>
  * Optionally override -Demail=... -Dpassword=...
  */
-public class TvWebAuthTryTest {
+public class WebAuthTryTest {
 
     @Test
     public void authorizesDeviceCode() {
@@ -23,7 +23,7 @@ public class TvWebAuthTryTest {
         Assert.assertNotNull(password, "Set tvPassword (local.properties or -DtvPassword=...)");
         Assert.assertNotNull(code, "Pass the TV code via -Dcode=XXXXXX");
 
-        TvWebAuth auth = TvWebAuth.dev();
+        WebAuth auth = WebAuth.dev();
 
         String userToken = auth.getUserToken(email, password);
         System.out.println("✅ userToken received (length " + userToken.length() + ")");
