@@ -75,6 +75,13 @@ public class MainScreenPage extends BasePage {
         return this;
     }
 
+    @Step("Verify the app is on the main screen (signed in)")
+    public MainScreenPage verifyOnMainScreen() {
+        Assert.assertTrue(isDisplayed(connectButton), "Connect button not displayed — not on the main screen");
+        Assert.assertTrue(isDisplayed(settingsButton), "Settings gear not displayed — not on the main screen");
+        return this;
+    }
+
     @Step("Select protocol {protocol}")
     public MainScreenPage selectProtocol(Protocols protocol) {
         dpad.focusOnAndSelect(protocolLocator(protocol));

@@ -50,4 +50,10 @@ public class SettingsMenuPage extends BasePage {
         dpad.focusOnAndSelect(termsService);
         return new TermsOfServicePage(testContext).waitLoaded();
     }
+
+    @Step("Choose 'Sign Out' (opens the confirmation dialog)")
+    public SignOutPage signOut() {
+        dpad.focusOnAndSelect(signOut);
+        return new SignOutPage(testContext).waitConfirmDialog();
+    }
 }

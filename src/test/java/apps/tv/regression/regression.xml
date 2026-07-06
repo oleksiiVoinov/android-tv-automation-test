@@ -5,12 +5,13 @@
             <class name="apps.tv.regression.ReinstallTest"/>
             <class name="apps.tv.regression.SignUpTest"/>
             <class name="apps.tv.regression.LoginTest"/>
-            <class name="apps.tv.regression.ServerListTest"/>
             <class name="apps.tv.regression.HelpSupportTest"/>
             <class name="apps.tv.regression.PrivacyNoticeTest"/>
+            <class name="apps.tv.regression.TermsOfServiceTest"/>
+            <class name="apps.tv.regression.SignOutTest"/>
             <class name="apps.tv.regression.MainScreenPageTest"/>
             <class name="apps.tv.regression.ProtocolsTest"/>
-            <class name="apps.tv.regression.TermsOfServiceTest"/>
+            <class name="apps.tv.regression.ServerListTest"/>
         </classes>
     </test>
 </suite>

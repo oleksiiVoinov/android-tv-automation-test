@@ -99,6 +99,7 @@ src/
 │   │           ├── HelpSupportPage.java    # Help & Support screen
 │   │           ├── PrivacyNoticePage.java  # Privacy Notice screen
 │   │           ├── TermsOfServicePage.java # Terms of Service screen
+│   │           ├── SignOutPage.java         # Sign Out: confirm dialog → signed-out screen → welcome
 │   │           └── Protocols.java          # protocol enum (Auto / IKEv2 / OpenVPN / ...)
 │   ├── configs/                           # RuntimeConfig, AppiumConfig, Port, app/devices/platformConfig
 │   └── driver/                            # TestContext, AndroidContext
@@ -110,7 +111,7 @@ src/
         ├── LoginTest.java, SignUpTest.java         # start from a clean slate (own precondition)
         ├── MainScreenPageTest.java, ProtocolsTest.java, ServerListTest.java
         ├── ReinstallTest.java                       # uninstall + install APK from apps/installation
-        ├── HelpSupportTest.java, PrivacyNoticeTest.java, TermsOfServiceTest.java
+        ├── HelpSupportTest.java, PrivacyNoticeTest.java, TermsOfServiceTest.java, SignOutTest.java
         └── regression.xml                           # TestNG suite (register new classes here)
 ```
 
@@ -164,6 +165,9 @@ Settings popup (opened from the gear) and its info screens:
   (`https://vpnsuper.com/privacy-notice`), `iv_privacy_notice_qr`, `btn_go_back`
 - Terms of Service (`TvServiceTermsActivity`): `tv_terms_service_headline`, `terms_service_site`
   (`https://vpnsuper.com/terms-of-service` — note: **no** `tv_` prefix), `iv_terms_service_qr`, `btn_go_back`
+- Sign Out: confirm dialog `tv_dialog_title` ("Are you sure you want to sign out?"),
+  `action_positive_btn` (Confirm), `action_negative_btn` (Decline). Confirm → `TvSignOutActivity`
+  (`sign_out_title` "You've been signed out", `sign_out_desc`, `btn_ok` "Okay") → welcome (signed out).
 
 Welcome / sign-in (`TvWelcomeActivity` / `TvSignInActivity` / `TvSignUpActivity`):
 - `tv_welcome_headline`, `btn_sign_in`, `btn_sign_up`
