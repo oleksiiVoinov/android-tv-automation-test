@@ -130,12 +130,13 @@ public class SplitTunnelingTest extends BaseTest {
 
         // 1. Real country of the target app (VPN off).
         new MainScreenPage(testContext).navigateToMainScreen().ensureDisconnected();
-        String realCode = countryCode(mapper, adb.appEgressJson(udid, TARGET_PKG));
-        System.out.println("🌍 real country of " + TARGET_PKG + " = " + realCode);
+        JsonNode realEgress = mapper.readTree(adb.appEgressJson(udid, TARGET_PKG));
+        String realCode = countryCode(realEgress);
+        reportCountry("Real country of " + TARGET_APP + " (VPN off)", realEgress);
 
         // 2. Connect to a server in a different country (target app is included by the baseline).
         ServerV7 server = pickServerNotIn(realCode);
-        System.out.println("🎯 connecting via server country = " + server.getCountry() + " (" + server.getCountryName() + ")");
+        System.out.println("🎯 connecting via server country = " + server.getCountryName() + " (" + server.getCountry() + ")");
         new MainScreenPage(testContext)
                 .navigateToMainScreen()
                 .openServerList()
@@ -143,11 +144,11 @@ public class SplitTunnelingTest extends BaseTest {
                 .ensureConnected();
 
         // 3. Included → the app egresses via the server's country.
-        String vpnCode = countryCode(mapper, adb.appEgressJson(udid, TARGET_PKG));
-        System.out.println("🌍 country while included+connected = " + vpnCode);
-        Assert.assertEquals(vpnCode, server.getCountry(),
+        JsonNode vpnEgress = mapper.readTree(adb.appEgressJson(udid, TARGET_PKG));
+        reportCountry(TARGET_APP + " country while included + connected", vpnEgress);
+        Assert.assertEquals(countryCode(vpnEgress), server.getCountry(),
                 "Included app should egress via the server country");
-        Assert.assertNotEquals(vpnCode, realCode, "VPN country must differ from the real country");
+        Assert.assertNotEquals(countryCode(vpnEgress), realCode, "VPN country must differ from the real country");
 
         // 4. Exclude the target, then reconnect so the VpnService re-applies the disallowed-app set
         //    (the change does NOT take effect on a live tunnel — verified: it stays routed until reconnect).
@@ -160,9 +161,9 @@ public class SplitTunnelingTest extends BaseTest {
         new MainScreenPage(testContext).navigateToMainScreen().reconnect();
 
         // Now the excluded app should bypass the tunnel → real country again.
-        String excludedCode = pollAppCountry(adb, mapper, udid, realCode);
-        System.out.println("🌍 country after excluding = " + excludedCode);
-        Assert.assertEquals(excludedCode, realCode,
+        JsonNode excludedEgress = pollAppEgress(adb, mapper, udid, realCode);
+        reportCountry(TARGET_APP + " country after excluding + reconnect", excludedEgress);
+        Assert.assertEquals(countryCode(excludedEgress), realCode,
                 "Excluded app should egress via the real country (bypass the VPN)");
 
         // Cleanup: re-include all apps, disconnect.
@@ -175,18 +176,25 @@ public class SplitTunnelingTest extends BaseTest {
         new MainScreenPage(testContext).navigateToMainScreen().ensureDisconnected();
     }
 
-    private String countryCode(ObjectMapper mapper, String json) throws Exception {
-        JsonNode node = mapper.readTree(json);
-        Assert.assertEquals(node.path("status").asText(), "success", "egress lookup failed: " + json);
-        return node.path("countryCode").asText();
+    private String countryCode(JsonNode egress) {
+        Assert.assertEquals(egress.path("status").asText(), "success", "egress lookup failed: " + egress);
+        return egress.path("countryCode").asText();
     }
 
-    /** Polls the target app's egress country, allowing time for the routing change to settle. */
-    private String pollAppCountry(CommandsADB adb, ObjectMapper mapper, String udid, String expected) throws Exception {
-        String last = null;
+    /** Prints the country name (+ code and IP) to the console and attaches it to the Allure report. */
+    private void reportCountry(String label, JsonNode egress) {
+        String line = label + ": " + egress.path("country").asText()
+                + " (" + egress.path("countryCode").asText() + "), IP " + egress.path("query").asText();
+        System.out.println("🌍 " + line);
+        io.qameta.allure.Allure.addAttachment("Egress — " + label, "text/plain", line);
+    }
+
+    /** Polls the target app's egress, allowing time for the routing change to settle. */
+    private JsonNode pollAppEgress(CommandsADB adb, ObjectMapper mapper, String udid, String expectedCode) throws Exception {
+        JsonNode last = null;
         for (int i = 0; i < 8; i++) {
-            last = countryCode(mapper, adb.appEgressJson(udid, TARGET_PKG));
-            if (expected.equalsIgnoreCase(last)) {
+            last = mapper.readTree(adb.appEgressJson(udid, TARGET_PKG));
+            if (expectedCode.equalsIgnoreCase(last.path("countryCode").asText())) {
                 return last;
             }
             Thread.sleep(2500);
