@@ -124,18 +124,18 @@ public class ServerListPage extends BasePage {
         for (int step = 0; step < MAX_LIST_STEPS; step++) {
             String focused = focusedRowText();
             if (text.equals(focused)) {
-                System.out.println("✅ scrollToRow: found '" + text + "' at step " + step);
+                //System.out.println("✅ scrollToRow: found '" + text + "' at step " + step);
                 return;
             }
             boolean visibleSomewhere = !appiumDriver.findElements(exact).isEmpty();
             String signature = visibleWindow() + "@" + focusedBounds();
-            System.out.println("   step " + step + " focused='" + focused + "' targetVisible=" + visibleSomewhere);
+            //System.out.println("   step " + step + " focused='" + focused + "' targetVisible=" + visibleSomewhere);
             // Signature = visible rows + focus position. It changes while the focus moves within the
             // viewport (top of list) and while content scrolls; it repeats only when the list wraps
             // back to a state we've seen or a DPAD_DOWN does nothing (true dead end). If that happens
             // and the target isn't even on screen, we've been through everything — stop.
             if (!seenWindows.add(signature) && !visibleSomewhere) {
-                System.out.println("⛔ scrollToRow: list cycled without '" + text + "' — giving up");
+                //System.out.println("⛔ scrollToRow: list cycled without '" + text + "' — giving up");
                 break;
             }
             dpad.down();
