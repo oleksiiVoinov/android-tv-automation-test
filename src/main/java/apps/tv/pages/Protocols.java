@@ -7,7 +7,11 @@ package apps.tv.pages;
 public enum Protocols {
     Auto("Auto"),
     IKEv2("IKEv2"),
-    OpenVPN("OpenVPN");
+    Super("Super"),
+    OpenVPN("OpenVPN"),
+    OpenVPNTCP("OpenVPNTCP"),
+    OpenVPNUDP("OpenVPUDP"),
+    V2Ray("V2Ray");
 
     public final String label;
 

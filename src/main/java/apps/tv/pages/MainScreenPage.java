@@ -8,9 +8,11 @@ import driver.TestContext;
 import io.appium.java_client.AppiumBy;
 import io.qameta.allure.Step;
 import org.openqa.selenium.By;
+import org.openqa.selenium.WebElement;
 import org.testng.Assert;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -28,6 +30,7 @@ public class MainScreenPage extends BasePage {
     public final By locationSelector = By.id(PKG + "vpn_location_selector");
     public final By fastestServerLabel = By.id(PKG + "tv_fastest_server");
     public final By protocolGrid = By.id(PKG + "connect_mode");
+    public final By protocols = By.id(PKG + "title");
 
     // Server list screen (TvServerListActivity)
     public final By serverListTitle = By.id(PKG + "tv_title");   // "Select Server Location"
@@ -53,6 +56,40 @@ public class MainScreenPage extends BasePage {
     public MainScreenPage navigateToMainScreen() {
         // Screen detection + per-page steps live in the shared Navigator (mirrors the phone framework).
         return new Navigator(testContext).toMainScreen();
+    }
+
+    public List<Protocols> getProtocols() {
+        List<Protocols> protocols = new ArrayList<>();
+        List<WebElement> elements = appiumDriver.findElements(this.protocols);
+
+        for (WebElement e : elements) {
+            switch (e.getText()) {
+                case "Auto":
+                    protocols.add(Protocols.Auto);
+                    break;
+                case "V2Ray":
+                    protocols.add(Protocols.V2Ray);
+                    break;
+                case "IKEv2":
+                    protocols.add(Protocols.IKEv2);
+                    break;
+                case "OpenVPN":
+                    protocols.add(Protocols.OpenVPN);
+                    break;
+                case "OpenVPN TCP":
+                    protocols.add(Protocols.OpenVPNTCP);
+                    break;
+                case "OpenVPN UDP":
+                    protocols.add(Protocols.OpenVPNUDP);
+                    break;
+                case "Super":
+                    protocols.add(Protocols.Super);
+                    break;
+                default:
+                    throw new IllegalStateException("Unknown protocol on start page.");
+            }
+        }
+        return protocols;
     }
 
     private By protocolLocator(Protocols protocol) {

@@ -1,6 +1,7 @@
 package apps.tv.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import configs.RuntimeConfig;
 import com.nimbusds.jose.EncryptionMethod;
 import com.nimbusds.jose.JWEAlgorithm;
 import com.nimbusds.jose.JWEHeader;
@@ -42,6 +43,17 @@ public class WebAuth {
             + "zss4qst4qS3h3HZKhxq2CBIYjd27otrg2almNrZadIqhn2AaG0IIOSjnqkdfPC0qPKuWbCddb+ScP+ft7YP/TxscIy4"
             + "T2q8igUdfnubaymHOgnYiTv+QIDAQAB";
 
+    // Production RSA public key — same value the phone WebPlatform uses for ProdConfig.
+    private static final String PROD_PUBLIC_KEY_PEM =
+            "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAg3SQZynHAo/vvvXUV86Z4uR9b/lwleLzq1wAcRWmFc1dhqt"
+            + "TOajEXs+7PkYi97RTZO4Qo7JU27NWaxwCjqS1IyHTs/Qm3F7KaWuRKEjsMxd3eBXK0dHLRH/yX8JR6P4ZYIUDpGrHp5"
+            + "SYMrDwHmIufx6LIw3NkIv0dHx99YZHQp8UtuIHeOhbPwXPM9t4zYwy59wCSWpJgKwrhzFk8eHl02hndAZekxSfQx4n8"
+            + "tl1L8tpyDxqqYaMHZ4pxMmGAwj5jY8efi5Zul+8euNiXRYy/hLiv28AOvFJQOcxHLl32YywK+eou/ZQpCrzSX3vM6c"
+            + "JhEfggI6j75MrZ76zFuhyHwIDAQAB";
+
+    private static final String DEV_BASE_URL = "https://web-frontend-staging.frontend-qaaccount.superuntest.net";
+    private static final String PROD_BASE_URL = "https://account.vpnsuper.com";
+
     private static final String VERIFY_PATH = "/api/internal/customer/verify";
     private static final String AUTHORIZE_PATH = "/api/internal/sessions/authorize";
 
@@ -56,7 +68,26 @@ public class WebAuth {
 
     /** Staging/dev account backend. */
     public static WebAuth dev() {
-        return new WebAuth("https://web-frontend-staging.frontend-qaaccount.superuntest.net", DEV_PUBLIC_KEY_PEM);
+        return new WebAuth(DEV_BASE_URL, DEV_PUBLIC_KEY_PEM);
+    }
+
+    /** Production account backend. */
+    public static WebAuth prod() {
+        return new WebAuth(PROD_BASE_URL, PROD_PUBLIC_KEY_PEM);
+    }
+
+    /**
+     * Picks the dev or prod backend from the {@code environment} runtime property
+     * (from {@code local.properties} / {@code -Denvironment=}). Defaults to dev.
+     */
+    public static WebAuth forEnvironment() {
+        String env = RuntimeConfig.getOptional("environment", "dev").trim().toLowerCase();
+        return switch (env) {
+            case "prod", "production" -> prod();
+            case "dev", "staging" -> dev();
+            default -> throw new IllegalStateException(
+                    "Unknown environment '" + env + "' (expected 'dev' or 'prod')");
+        };
     }
 
     /** Full flow: authenticate the account, then authorize the device code shown on the TV. */

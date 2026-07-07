@@ -182,8 +182,13 @@ Server list (`TvServerListActivity`):
 ## Login (device-code, no manual QR)
 
 Reaching main logs in automatically via `SignInPage.ensureSignedIn` (driven by `Navigator`).
-It reads the rotating `tv_sign_in_code`, approves it through the account API (`WebAuth`, staging
-backend), and waits for the main screen. Requires a **premium** `tvEmail`/`tvPassword`.
+It reads the rotating `tv_sign_in_code`, approves it through the account API (`WebAuth`), and waits
+for the main screen. Requires a **premium** `tvEmail`/`tvPassword`.
+
+`WebAuth.forEnvironment()` picks the backend from the `environment` property (`dev`/`prod`, from
+`local.properties`): `dev` → staging (`web-frontend-staging.frontend-qaaccount.superuntest.net`),
+`prod` → `account.vpnsuper.com`. Each env has its own RSA public key for the JWE body (both keys
+mirror the phone `WebPlatform` Dev/Prod configs). The premium test account must exist in that env.
 
 ## Known Gotchas
 

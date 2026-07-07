@@ -20,7 +20,7 @@ import org.testng.annotations.Test;
  */
 @Epic("Android TV")
 @Feature("1. Login")
-public class LoginTest extends BaseTest {
+public class SignInTest extends BaseTest {
 
     // Runs after BaseTest.tearUp (@BeforeClass: superclass before subclass) — driver is ready here.
     @BeforeClass

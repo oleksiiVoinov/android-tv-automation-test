@@ -10,29 +10,35 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.util.List;
+
 @Epic("Android TV")
 public class ProtocolsTest extends BaseTest {
     private ServerV7 server;
+    private List<Protocols> protocolList;
 
     @Story("3. Protocols")
     @BeforeClass()
     public void precondition() throws Exception {
-        // testContext is ready only here (@BeforeClass), not at field-init time.
+        protocolList = new MainScreenPage(testContext)
+                .navigateToMainScreen()
+                .getProtocols();
+        protocolList.removeIf(s -> s.equals(Protocols.Auto));
+
         server = new ServerList(testContext).getRandomNonUsServer();
         new MainScreenPage(testContext)
                 .navigateToMainScreen()
+                .disconnect()
+                .selectProtocol(Protocols.Auto)
                 .openServerList()
                 .selectServer(server);
     }
 
     @DataProvider(name = "protocols")
     public Object[][] protocols() {
-        // Auto is covered by the connect smoke; here we exercise the explicit protocols.
-        return new Object[][]{
-                {Protocols.OpenVPN},
-                {Protocols.IKEv2},
-                {Protocols.Auto}
-        };
+        return protocolList.stream()
+                .map(protocol -> new Object[]{protocol})
+                .toArray(Object[][]::new);
     }
 
     @Test(priority = 1, dataProvider = "protocols", description = "connect on each protocol")
@@ -53,7 +59,6 @@ public class ProtocolsTest extends BaseTest {
         new MainScreenPage(testContext)
                 .selectProtocol(protocol)
                 .verifyConnected()
-                .verifyRealEgress(server)
-                .disconnect();
+                .verifyRealEgress(server);
     }
 }

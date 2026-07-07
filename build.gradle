@@ -156,15 +156,6 @@ tasks.withType(Test).configureEach {
     }
 }
 
-/** =========================
- *  Smoke suite
- *  ========================= */
-tasks.register('smokeTest', Test) {
-    useTestNG {
-        suites "src/test/java/apps/tv/regression/smoke.xml"
-    }
-}
-
 tasks.register('regressionTest', Test) {
     useTestNG {
         suites "src/test/java/apps/tv/regression/regression.xml"
