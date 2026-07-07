@@ -8,6 +8,7 @@
             <class name="apps.tv.regression.HelpSupportTest"/>
             <class name="apps.tv.regression.PrivacyNoticeTest"/>
             <class name="apps.tv.regression.TermsOfServiceTest"/>
+            <class name="apps.tv.regression.SplitTunnelingTest"/>
             <class name="apps.tv.regression.MainScreenPageTest"/>
             <class name="apps.tv.regression.ProtocolsTest"/>
             <class name="apps.tv.regression.ServerListTest"/>

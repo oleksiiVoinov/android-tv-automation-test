@@ -30,9 +30,11 @@ public class Navigator extends BasePage {
     private static final String SIGN_UP_SIG = PKG + "iv_sign_up_qr";
     private static final String SERVER_LIST_SIG = PKG + "tv_title";
     private static final String RECONNECT_DIALOG_SIG = PKG + "action_cancel_btn";
-    // Info sub-screens (Help/Privacy/Terms) all carry a "Go back"; the settings popup carries this item.
+    // Info sub-screens (Help/Privacy/Terms) all carry a "Go back"; the settings popup carries this item;
+    // the split-tunneling screen carries the "all apps" master checkbox. All are escapable with BACK.
     private static final String GO_BACK_SIG = PKG + "btn_go_back";
     private static final String SETTINGS_MENU_SIG = PKG + "tv_settings_help_support";
+    private static final String SPLIT_TUNNELING_SIG = PKG + "check_all_app";
     // Debug/logger screen (LoggerActivity) — opened by holding Connect ~3s; BACK returns to main.
     private static final String DEBUG_MENU_SIG = PKG + "logs_recycler_view";
 
@@ -77,8 +79,9 @@ public class Navigator extends BasePage {
         if (source.contains(DEBUG_MENU_SIG)) {
             return Pages.DEBUG_MENU;
         }
-        // Settings popup or an info sub-screen (Help/Privacy/Terms) — escapable with BACK.
-        if (source.contains(GO_BACK_SIG) || source.contains(SETTINGS_MENU_SIG)) {
+        // Settings popup, an info sub-screen (Help/Privacy/Terms) or split tunneling — escapable with BACK.
+        if (source.contains(GO_BACK_SIG) || source.contains(SETTINGS_MENU_SIG)
+                || source.contains(SPLIT_TUNNELING_SIG)) {
             return Pages.INFO_SCREEN;
         }
         // Splash / loading / transition — nothing actionable yet.

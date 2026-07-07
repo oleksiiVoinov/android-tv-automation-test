@@ -56,4 +56,10 @@ public class SettingsMenuPage extends BasePage {
         dpad.focusOnAndSelect(signOut);
         return new SignOutPage(testContext).waitConfirmDialog();
     }
+
+    @Step("Open 'Split Tunneling'")
+    public SplitTunnelingPage openSplitTunneling() {
+        dpad.focusOnAndSelect(splitTunneling);
+        return new SplitTunnelingPage(testContext).waitLoaded();
+    }
 }

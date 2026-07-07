@@ -100,6 +100,7 @@ src/
 │   │           ├── PrivacyNoticePage.java  # Privacy Notice screen
 │   │           ├── TermsOfServicePage.java # Terms of Service screen
 │   │           ├── SignOutPage.java         # Sign Out: confirm dialog → signed-out screen → welcome
+│   │           ├── SplitTunnelingPage.java   # Split tunneling app list (per-app VPN include/exclude)
 │   │           └── Protocols.java          # protocol enum (Auto / IKEv2 / OpenVPN / ...)
 │   ├── configs/                           # RuntimeConfig, AppiumConfig, Port, app/devices/platformConfig
 │   └── driver/                            # TestContext, AndroidContext
@@ -112,6 +113,7 @@ src/
         ├── MainScreenPageTest.java, ProtocolsTest.java, ServerListTest.java
         ├── ReinstallTest.java                       # uninstall + install APK from apps/installation
         ├── HelpSupportTest.java, PrivacyNoticeTest.java, TermsOfServiceTest.java, SignOutTest.java
+        ├── SplitTunnelingTest.java                  # split tunneling: exclude an app + persistence
         └── regression.xml                           # TestNG suite (register new classes here)
 ```
 
