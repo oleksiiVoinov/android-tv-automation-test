@@ -123,10 +123,12 @@ Navigation lives in `Navigator` + the `Pages` enum, **not** in blind BACK-loops.
   value. Order matters (a dialog overlays main; sub-screens before the screen they open from):
   `RECONNECT_DIALOG (action_cancel_btn)` → `SIGN_UP (iv_sign_up_qr)` → `SIGN_IN (tv_sign_in_code)`
   → `WELCOME (btn_sign_in)` → `SERVER_LIST (tv_title)` → `MAIN (tvConnectButton)`
-  → `INFO_SCREEN (btn_go_back || tv_settings_help_support)` → `UNKNOWN`.
+  → `DEBUG_MENU (logs_recycler_view)` → `INFO_SCREEN (btn_go_back || tv_settings_help_support)` → `UNKNOWN`.
 - `detectCurrentPage(retry, poll)` polls, absorbing the loading/splash screen.
 - `toMainScreen()` / `toWelcome()` loop "detect → one corrective step": login on WELCOME/SIGN_IN,
-  cancel the reconnect dialog, BACK out of SERVER_LIST / SIGN_UP / **INFO_SCREEN**, wait on UNKNOWN.
+  cancel the reconnect dialog, BACK out of SERVER_LIST / SIGN_UP / **INFO_SCREEN** / **DEBUG_MENU**,
+  wait on UNKNOWN. The debug/logger screen (`LoggerActivity`) opens on a ~3s hold of Connect
+  (`MainScreenPage.holdConnect`); BACK returns to main.
 - `MainScreenPage.navigateToMainScreen()` and `SignInPage.navigateToWelcome()` delegate to it.
 
 **Why `INFO_SCREEN` matters:** tests that open a menu screen leave the app on a sub-screen; the
@@ -185,10 +187,18 @@ Reaching main logs in automatically via `SignInPage.ensureSignedIn` (driven by `
 It reads the rotating `tv_sign_in_code`, approves it through the account API (`WebAuth`), and waits
 for the main screen. Requires a **premium** `tvEmail`/`tvPassword`.
 
-`WebAuth.forEnvironment()` picks the backend from the `environment` property (`dev`/`prod`, from
-`local.properties`): `dev` → staging (`web-frontend-staging.frontend-qaaccount.superuntest.net`),
-`prod` → `account.vpnsuper.com`. Each env has its own RSA public key for the JWE body (both keys
-mirror the phone `WebPlatform` Dev/Prod configs). The premium test account must exist in that env.
+Environment is a first-class config (mirrors the phone framework): `configs.environment`
+(`EnvironmentConfig` + `DevConfig`/`ProdConfig` + `EnvironmentFactory` + `Environment` enum).
+`AndroidConfig` resolves it from the `environment` property (`dev`/`prod`, default `dev`) and stores
+it on the driver context — read it anywhere via `testContext.getEnvironment()` (`.getBaseUrl()`,
+`.getServerlistUrl()`).
+
+`WebAuth.forEnvironment(testContext.getEnvironment())` builds the sign-in client: base URL from the
+env config, and the matching RSA public key selected by `getEnvironment()` (dev/prod keys mirror the
+phone `WebPlatform`). Endpoints: `dev` → staging (`web-frontend-staging.frontend-qaaccount.superuntest.net`)
++ `dev-api.mobilejump.mobi`; `prod` → `account.vpnsuper.com` + `prod-api.mobilejump.mobi`.
+`ServerList` uses `testContext.getEnvironment().getServerlistUrl()` (an explicit `-DserverlistUrl`
+still overrides). The premium test account must exist in the selected env.
 
 ## Known Gotchas
 

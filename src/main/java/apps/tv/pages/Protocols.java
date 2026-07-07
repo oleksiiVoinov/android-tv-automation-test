@@ -9,8 +9,8 @@ public enum Protocols {
     IKEv2("IKEv2"),
     Super("Super"),
     OpenVPN("OpenVPN"),
-    OpenVPNTCP("OpenVPNTCP"),
-    OpenVPNUDP("OpenVPUDP"),
+    OpenVPNTCP("OpenVPN TCP"),
+    OpenVPNUDP("OpenVPN UDP"),
     V2Ray("V2Ray");
 
     public final String label;

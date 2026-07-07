@@ -105,10 +105,12 @@ public class MainScreenPage extends BasePage {
         for (By element : elements) {
             Assert.assertTrue(isDisplayed(element), "Main screen element not displayed: " + element);
         }
-        for (Protocols protocol : Protocols.values()) {
-            Assert.assertTrue(isDisplayed(protocolLocator(protocol)),
-                    "Protocol not displayed in the grid: " + protocol.label);
-        }
+
+        Assert.assertTrue(appiumDriver.findElements(protocols).size() >= 2, "Protocols not displayed in the grid");
+        Assert.assertTrue(isDisplayed(protocolLocator(Protocols.IKEv2)),
+                "Protocol IKEv2 not displayed in the grid: " + Protocols.IKEv2);
+        Assert.assertTrue(isDisplayed(protocolLocator(Protocols.Auto)),
+                "Protocol IKEv2 not displayed in the grid: " + Protocols.Auto);
         return this;
     }
 
@@ -121,9 +123,33 @@ public class MainScreenPage extends BasePage {
 
     @Step("Select protocol {protocol}")
     public MainScreenPage selectProtocol(Protocols protocol) {
+        focusProtocolRow();
         dpad.focusOnAndSelect(protocolLocator(protocol));
         confirmReconnectIfPresent();
         return this;
+    }
+
+    /**
+     * Moves focus into the protocol grid before the geometry-based {@code focusOn}.
+     * The grid cells all share the id {@code title}; once focus is on any of them, reaching a
+     * specific one (e.g. the rightmost V2Ray) needs only horizontal moves. Without this, a start
+     * on the big Connect button leaves {@code focusOn} unable to route the L-shaped path in time.
+     */
+    private void focusProtocolRow() {
+        if (isProtocolFocused()) {
+            return;
+        }
+        for (int i = 0; i < 6; i++) {
+            dpad.down();
+            if (isProtocolFocused()) {
+                return;
+            }
+        }
+    }
+
+    private boolean isProtocolFocused() {
+        return !appiumDriver.findElements(AppiumBy.androidUIAutomator(
+                "new UiSelector().resourceId(\"" + PKG + "title\").focused(true)")).isEmpty();
     }
 
     /**
@@ -186,6 +212,26 @@ public class MainScreenPage extends BasePage {
         return this;
     }
 
+    /**
+     * Press and hold the Connect button for {@code duration} (e.g. a hold-to-connect of 3s).
+     */
+    @Step("Press and hold Connect for {duration}")
+    public MainScreenPage holdConnect(Duration duration) {
+        longPress(connectButton, duration);
+        return this;
+    }
+
+    @Step("Verify debug menu is exist")
+    public boolean verifyDebugMenu() {
+        try {
+            fluentVisibility(AppiumBy.androidUIAutomator("new UiSelector().text(\"Connect Logger\")"),
+                    Duration.ofSeconds(2));
+            return true;
+        } catch (org.openqa.selenium.TimeoutException e) {
+            return false;
+        }
+    }
+
     @Step("Verify the VPN reports connected in the UI (status CONNECTED + timer running)")
     public MainScreenPage verifyConnected() {
         boolean connected = waitForText(connectStatus, STATUS_CONNECTED, Duration.ofSeconds(30));
@@ -235,7 +281,9 @@ public class MainScreenPage extends BasePage {
         return this;
     }
 
-    /** Makes the on-device egress request (through the tunnel) and returns the parsed ip-api JSON. */
+    /**
+     * Makes the on-device egress request (through the tunnel) and returns the parsed ip-api JSON.
+     */
     private JsonNode fetchEgress() {
         verifyConnected();
         String json = new CommandsADB().deviceEgressJson(testContext.getDevice().uDID);

@@ -101,7 +101,7 @@ public class SignInPage extends BasePage {
         openSignIn();
         String code = textOf(signInCode);
         System.out.println("📺 TV device code: " + code);
-        WebAuth.forEnvironment().signInWithCode(email, password, code);
+        WebAuth.forEnvironment(testContext.getEnvironment()).signInWithCode(email, password, code);
         fluentVisibility(connectButton, Duration.ofSeconds(40));
         System.out.println("✅ TV signed in via API");
         return new MainScreenPage(testContext);
@@ -126,7 +126,7 @@ public class SignInPage extends BasePage {
         String code = fluentVisibility(signInCode, Duration.ofSeconds(15)).getText().trim();
         System.out.println("📺 TV device code: " + code);
 
-        WebAuth.forEnvironment().signInWithCode(email, password, code);
+        WebAuth.forEnvironment(testContext.getEnvironment()).signInWithCode(email, password, code);
 
         // The app polls its auth session; wait for it to complete and show the main screen.
         fluentVisibility(connectButton, Duration.ofSeconds(40));

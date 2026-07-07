@@ -64,6 +64,22 @@ public abstract class BasePage extends Wait {
                 "mobile: clickGesture", Map.of("x", cx, "y", cy));
     }
 
+    /**
+     * Presses and holds an element for {@code duration} via a UiAutomator2 long-click gesture
+     * (touch down → hold → up). This is the only reliable way to hold for a specific time on TV:
+     * a D-pad center long-press only fires a single {@code onLongClick} at the system long-press
+     * timeout, not a controllable multi-second hold. Used e.g. for a hold-to-connect button.
+     */
+    @Step("Press and hold {target} for {duration}")
+    protected void longPress(By target, java.time.Duration duration) {
+        Rectangle r = fluentPresenceOfElementLocated(target).getRect();
+        int cx = r.getX() + r.getWidth() / 2;
+        int cy = r.getY() + r.getHeight() / 2;
+        testContext.getAndroidDriver().executeScript(
+                "mobile: longClickGesture",
+                Map.of("x", cx, "y", cy, "duration", duration.toMillis()));
+    }
+
     @Step("Attach screenshot: {name}")
     public void attachScreenToReport(String name) {
         File file = testContext.getAndroidDriver().getScreenshotAs(OutputType.FILE);

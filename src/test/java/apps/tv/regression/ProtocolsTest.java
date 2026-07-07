@@ -28,7 +28,6 @@ public class ProtocolsTest extends BaseTest {
         server = new ServerList(testContext).getRandomNonUsServer();
         new MainScreenPage(testContext)
                 .navigateToMainScreen()
-                .disconnect()
                 .selectProtocol(Protocols.Auto)
                 .openServerList()
                 .selectServer(server);

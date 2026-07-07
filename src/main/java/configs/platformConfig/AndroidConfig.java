@@ -1,6 +1,9 @@
 package configs.platformConfig;
 
+import configs.RuntimeConfig;
 import configs.devices.Device;
+import configs.environment.EnvironmentConfig;
+import configs.environment.EnvironmentFactory;
 import driver.AndroidContext;
 
 import java.net.URL;
@@ -23,9 +26,12 @@ public class AndroidConfig {
                 device.app.mainActivity + ",*TvWelcomeActivity,*TvSignInActivity");
         device.capabilities.setCapability("appium:appWaitDuration", 30000);
 
+        EnvironmentConfig environment = new EnvironmentFactory()
+                .getConfig(RuntimeConfig.getOptional("environment", "dev"));
+
         System.out.println("🌐 Appium Server: " + host + ":" + port);
         System.out.println("📺 TV device: " + device.uDID + " → " + device.app.appActivity);
 
-        return new AndroidContext(new URL("http://" + host + ":" + port + "/"), device);
+        return new AndroidContext(new URL("http://" + host + ":" + port + "/"), device, environment);
     }
 }

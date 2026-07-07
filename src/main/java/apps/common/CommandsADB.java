@@ -136,15 +136,35 @@ public class CommandsADB {
      */
     @Step("Read device egress geo (through the tunnel) via on-device HTTP")
     public String deviceEgressJson(String udid) {
+        // ip-api.com over the tunnel can flap (free-tier rate limit / nc timing) — retry a few times.
         String remote = "printf 'GET /json HTTP/1.0\\r\\nHost: ip-api.com\\r\\nUser-Agent: curl\\r\\n\\r\\n'"
                 + " | nc -w 8 ip-api.com 80";
-        String out = runAdbOutput(20, "-s", udid, "shell", remote);
-        int start = out.indexOf('{');
-        int end = out.lastIndexOf('}');
-        if (start < 0 || end <= start) {
-            throw new IllegalStateException("Could not read device egress JSON from ip-api.com. Raw output:\n" + out);
+        String lastOut = "";
+        for (int attempt = 1; attempt <= EGRESS_ATTEMPTS; attempt++) {
+            lastOut = runAdbOutput(20, "-s", udid, "shell", remote);
+            int start = lastOut.indexOf('{');
+            int end = lastOut.lastIndexOf('}');
+            if (start >= 0 && end > start) {
+                return lastOut.substring(start, end + 1);
+            }
+            System.out.println("↻ egress read attempt " + attempt + "/" + EGRESS_ATTEMPTS + " failed; retrying...");
+            sleep(EGRESS_RETRY_PAUSE);
         }
-        return out.substring(start, end + 1);
+        throw new IllegalStateException(
+                "Could not read device egress JSON from ip-api.com after " + EGRESS_ATTEMPTS
+                        + " attempts. Last raw output:\n" + lastOut);
+    }
+
+    private static final int EGRESS_ATTEMPTS = 3;
+    private static final Duration EGRESS_RETRY_PAUSE = Duration.ofSeconds(3);
+
+    private void sleep(Duration duration) {
+        try {
+            Thread.sleep(duration.toMillis());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(e);
+        }
     }
 
     /** Runs a command with a hard timeout so a flaky adb call can't hang the run forever. */

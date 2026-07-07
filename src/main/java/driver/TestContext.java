@@ -1,6 +1,7 @@
 package driver;
 
 import configs.devices.Device;
+import configs.environment.EnvironmentConfig;
 import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.android.AndroidDriver;
 
@@ -11,4 +12,6 @@ public interface TestContext {
     AndroidDriver getAndroidDriver();
 
     Device getDevice();
+
+    EnvironmentConfig getEnvironment();
 }

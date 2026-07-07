@@ -1,7 +1,7 @@
 package apps.tv.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import configs.RuntimeConfig;
+import configs.environment.EnvironmentConfig;
 import com.nimbusds.jose.EncryptionMethod;
 import com.nimbusds.jose.JWEAlgorithm;
 import com.nimbusds.jose.JWEHeader;
@@ -77,16 +77,13 @@ public class WebAuth {
     }
 
     /**
-     * Picks the dev or prod backend from the {@code environment} runtime property
-     * (from {@code local.properties} / {@code -Denvironment=}). Defaults to dev.
+     * Picks the account backend for the given environment: base URL comes from the
+     * {@link EnvironmentConfig}, and the matching RSA public key is selected here.
      */
-    public static WebAuth forEnvironment() {
-        String env = RuntimeConfig.getOptional("environment", "dev").trim().toLowerCase();
-        return switch (env) {
-            case "prod", "production" -> prod();
-            case "dev", "staging" -> dev();
-            default -> throw new IllegalStateException(
-                    "Unknown environment '" + env + "' (expected 'dev' or 'prod')");
+    public static WebAuth forEnvironment(EnvironmentConfig environment) {
+        return switch (environment.getEnvironment()) {
+            case DEV -> new WebAuth(environment.getBaseUrl(), DEV_PUBLIC_KEY_PEM);
+            case PROD -> new WebAuth(environment.getBaseUrl(), PROD_PUBLIC_KEY_PEM);
         };
     }
 

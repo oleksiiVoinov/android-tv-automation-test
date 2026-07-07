@@ -40,10 +40,10 @@ public class ServerList {
         removeCountries("Russia");
     }
 
-    private static final String DEFAULT_SERVERLIST_URL = "https://dev-api.mobilejump.mobi";
-
     private String fetchAndDecode(TestContext testContext) throws Exception {
-        RestAssured.baseURI = RuntimeConfig.getOptional("serverlistUrl", DEFAULT_SERVERLIST_URL);
+        // Explicit -DserverlistUrl wins; otherwise use the URL for the current environment.
+        RestAssured.baseURI = RuntimeConfig.getOptional(
+                "serverlistUrl", testContext.getEnvironment().getServerlistUrl());
         String region = RuntimeConfig.getOptional("region", "UA");
         String key = RuntimeConfig.getRequired("serverListKey");
         String tvApp = testContext.getDevice().app.appPackage + TVOS_APP_SUFFIX;

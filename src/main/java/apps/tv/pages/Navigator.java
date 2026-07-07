@@ -33,6 +33,8 @@ public class Navigator extends BasePage {
     // Info sub-screens (Help/Privacy/Terms) all carry a "Go back"; the settings popup carries this item.
     private static final String GO_BACK_SIG = PKG + "btn_go_back";
     private static final String SETTINGS_MENU_SIG = PKG + "tv_settings_help_support";
+    // Debug/logger screen (LoggerActivity) — opened by holding Connect ~3s; BACK returns to main.
+    private static final String DEBUG_MENU_SIG = PKG + "logs_recycler_view";
 
     public Navigator(TestContext testContext) {
         super(testContext);
@@ -70,6 +72,10 @@ public class Navigator extends BasePage {
         }
         if (source.contains(MAIN_SIG)) {
             return Pages.MAIN;
+        }
+        // Debug/logger screen (opened by a 3s hold on Connect) — escapable with BACK.
+        if (source.contains(DEBUG_MENU_SIG)) {
+            return Pages.DEBUG_MENU;
         }
         // Settings popup or an info sub-screen (Help/Privacy/Terms) — escapable with BACK.
         if (source.contains(GO_BACK_SIG) || source.contains(SETTINGS_MENU_SIG)) {
@@ -116,7 +122,7 @@ public class Navigator extends BasePage {
                         RuntimeConfig.getRequired("tvPassword"));
                 case SIGN_UP -> dpad.back();               // back to welcome, then login next loop
                 case RECONNECT_DIALOG -> dpad.focusOnAndSelect(org.openqa.selenium.By.id(RECONNECT_DIALOG_SIG));
-                case SERVER_LIST, INFO_SCREEN -> dpad.back();
+                case SERVER_LIST, INFO_SCREEN, DEBUG_MENU -> dpad.back();
                 case UNKNOWN, LOADING -> pause(Duration.ofSeconds(1));
             }
         }
@@ -138,7 +144,7 @@ public class Navigator extends BasePage {
                 case WELCOME -> {
                     return new SignInPage(testContext);
                 }
-                case SIGN_IN, SIGN_UP, SERVER_LIST, RECONNECT_DIALOG, INFO_SCREEN -> dpad.back();
+                case SIGN_IN, SIGN_UP, SERVER_LIST, RECONNECT_DIALOG, INFO_SCREEN, DEBUG_MENU -> dpad.back();
                 case MAIN -> throw new IllegalStateException(
                         "Expected the welcome screen but the app is signed in (on main). "
                                 + "Clear app data before login/sign-up tests.");
