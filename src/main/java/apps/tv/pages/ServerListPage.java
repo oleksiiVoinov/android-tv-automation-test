@@ -148,8 +148,8 @@ public class ServerListPage extends BasePage {
 
     @Step("Select server {server}")
     private void selectAliasName(String text) {
-        List<WebElement> elementList = appiumDriver
-                .findElement(By.id("com.free.vpn.super.hotspot.open:id/server_popup_items_container"))
+        List<WebElement> elementList = fluentVisibility(
+                By.id("com.free.vpn.super.hotspot.open:id/server_popup_items_container"))
                 .findElements(By.className("android.widget.TextView"));
 
         for (int i = 0; i < elementList.size(); i++) {
