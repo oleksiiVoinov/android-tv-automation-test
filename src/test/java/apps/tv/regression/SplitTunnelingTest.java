@@ -1,8 +1,13 @@
 package apps.tv.regression;
 
 import apps.BaseTest;
+import apps.common.CommandsADB;
+import apps.tv.api.serverlist.ServerList;
+import apps.tv.api.serverlist.ServerV7;
 import apps.tv.pages.MainScreenPage;
 import apps.tv.pages.SplitTunnelingPage;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.qameta.allure.Description;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;
@@ -22,7 +27,8 @@ import org.testng.annotations.Test;
 @Feature("4. Settings menu")
 public class SplitTunnelingTest extends BaseTest {
 
-    private static final String TARGET_APP = "Appium Settings";
+    private static final String TARGET_APP = "Appium Settings";       // list label
+    private static final String TARGET_PKG = "io.appium.settings";    // its package (debuggable → run-as)
     private static final String CONTROL_APP = "Apple TV";   // must stay included when we exclude the target
 
     /** Baseline: the master "all apps" checkbox on → every app included. Runs after BaseTest.tearUp. */
@@ -103,5 +109,99 @@ public class SplitTunnelingTest extends BaseTest {
                 .openSplitTunneling()
                 .ensureAllAppsIncluded()
                 .goBack();
+    }
+
+    @Test(priority = 3, description = "Split tunneling actually re-routes a specific app's traffic")
+    @Story("Split Tunneling")
+    @Severity(SeverityLevel.BLOCKER)
+    @Description("""
+            Objective: prove split tunneling has a REAL effect on traffic for one app, measured
+            from that app's own uid (run-as io.appium.settings → ip-api.com).
+
+            Steps:
+            1. disconnect VPN → read the target app's real egress country
+            2. connect to a server in a different country
+            3. read the target app's egress country → expect the SERVER's country (app is included)
+            4. exclude the target app in Split Tunneling → read again → expect the REAL country back""")
+    public void splitTunnelingReroutesAppTraffic() throws Exception {
+        CommandsADB adb = new CommandsADB();
+        ObjectMapper mapper = new ObjectMapper();
+        String udid = device.uDID;
+
+        // 1. Real country of the target app (VPN off).
+        new MainScreenPage(testContext).navigateToMainScreen().ensureDisconnected();
+        String realCode = countryCode(mapper, adb.appEgressJson(udid, TARGET_PKG));
+        System.out.println("🌍 real country of " + TARGET_PKG + " = " + realCode);
+
+        // 2. Connect to a server in a different country (target app is included by the baseline).
+        ServerV7 server = pickServerNotIn(realCode);
+        System.out.println("🎯 connecting via server country = " + server.getCountry() + " (" + server.getCountryName() + ")");
+        new MainScreenPage(testContext)
+                .navigateToMainScreen()
+                .openServerList()
+                .selectServer(server)
+                .ensureConnected();
+
+        // 3. Included → the app egresses via the server's country.
+        String vpnCode = countryCode(mapper, adb.appEgressJson(udid, TARGET_PKG));
+        System.out.println("🌍 country while included+connected = " + vpnCode);
+        Assert.assertEquals(vpnCode, server.getCountry(),
+                "Included app should egress via the server country");
+        Assert.assertNotEquals(vpnCode, realCode, "VPN country must differ from the real country");
+
+        // 4. Exclude the target, then reconnect so the VpnService re-applies the disallowed-app set
+        //    (the change does NOT take effect on a live tunnel — verified: it stays routed until reconnect).
+        new MainScreenPage(testContext)
+                .navigateToMainScreen()
+                .openSettingsMenu()
+                .openSplitTunneling()
+                .excludeApp(TARGET_APP)
+                .goBack();
+        new MainScreenPage(testContext).navigateToMainScreen().reconnect();
+
+        // Now the excluded app should bypass the tunnel → real country again.
+        String excludedCode = pollAppCountry(adb, mapper, udid, realCode);
+        System.out.println("🌍 country after excluding = " + excludedCode);
+        Assert.assertEquals(excludedCode, realCode,
+                "Excluded app should egress via the real country (bypass the VPN)");
+
+        // Cleanup: re-include all apps, disconnect.
+        new MainScreenPage(testContext)
+                .navigateToMainScreen()
+                .openSettingsMenu()
+                .openSplitTunneling()
+                .ensureAllAppsIncluded()
+                .goBack();
+        new MainScreenPage(testContext).navigateToMainScreen().ensureDisconnected();
+    }
+
+    private String countryCode(ObjectMapper mapper, String json) throws Exception {
+        JsonNode node = mapper.readTree(json);
+        Assert.assertEquals(node.path("status").asText(), "success", "egress lookup failed: " + json);
+        return node.path("countryCode").asText();
+    }
+
+    /** Polls the target app's egress country, allowing time for the routing change to settle. */
+    private String pollAppCountry(CommandsADB adb, ObjectMapper mapper, String udid, String expected) throws Exception {
+        String last = null;
+        for (int i = 0; i < 8; i++) {
+            last = countryCode(mapper, adb.appEgressJson(udid, TARGET_PKG));
+            if (expected.equalsIgnoreCase(last)) {
+                return last;
+            }
+            Thread.sleep(2500);
+        }
+        return last;
+    }
+
+    private ServerV7 pickServerNotIn(String avoidCountryCode) throws Exception {
+        ServerList list = new ServerList(testContext);
+        for (int i = 0; i < 10; i++) {
+            ServerV7 s = list.getRandomNonUsServer();
+            if (!s.getCountry().equalsIgnoreCase(avoidCountryCode)) {
+                return s;
+            }
+        }
+        throw new IllegalStateException("Could not find a server outside country " + avoidCountryCode);
     }
 }

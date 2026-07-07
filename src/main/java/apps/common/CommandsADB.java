@@ -136,9 +136,26 @@ public class CommandsADB {
      */
     @Step("Read device egress geo (through the tunnel) via on-device HTTP")
     public String deviceEgressJson(String udid) {
-        // ip-api.com over the tunnel can flap (free-tier rate limit / nc timing) — retry a few times.
+        // Runs as the adb shell uid — reflects the shell's routing (covered by the tunnel by default).
         String remote = "printf 'GET /json HTTP/1.0\\r\\nHost: ip-api.com\\r\\nUser-Agent: curl\\r\\n\\r\\n'"
                 + " | nc -w 8 ip-api.com 80";
+        return egressJson(udid, remote, "device");
+    }
+
+    /**
+     * Egress geolocation as seen by a specific <b>app's uid</b> (via {@code run-as <pkg>}), so it
+     * reflects that app's split-tunneling routing — included → server country, excluded → real country.
+     * Requires {@code pkg} to be debuggable (e.g. {@code io.appium.settings}); run-as fails otherwise.
+     */
+    @Step("Read egress geo as app {pkg} (through its uid) via on-device HTTP")
+    public String appEgressJson(String udid, String pkg) {
+        String remote = "run-as " + pkg + " sh -c \"printf 'GET /json HTTP/1.0\\r\\nHost: ip-api.com"
+                + "\\r\\nUser-Agent: curl\\r\\n\\r\\n' | /system/bin/nc -w 8 ip-api.com 80\"";
+        return egressJson(udid, remote, pkg);
+    }
+
+    /** Shared retry+parse for the on-device ip-api lookup ({@code remote} is the on-device command). */
+    private String egressJson(String udid, String remote, String who) {
         String lastOut = "";
         for (int attempt = 1; attempt <= EGRESS_ATTEMPTS; attempt++) {
             lastOut = runAdbOutput(20, "-s", udid, "shell", remote);
@@ -147,12 +164,12 @@ public class CommandsADB {
             if (start >= 0 && end > start) {
                 return lastOut.substring(start, end + 1);
             }
-            System.out.println("↻ egress read attempt " + attempt + "/" + EGRESS_ATTEMPTS + " failed; retrying...");
+            System.out.println("↻ egress(" + who + ") attempt " + attempt + "/" + EGRESS_ATTEMPTS
+                    + " failed; retrying...");
             sleep(EGRESS_RETRY_PAUSE);
         }
-        throw new IllegalStateException(
-                "Could not read device egress JSON from ip-api.com after " + EGRESS_ATTEMPTS
-                        + " attempts. Last raw output:\n" + lastOut);
+        throw new IllegalStateException("Could not read egress JSON (" + who + ") from ip-api.com after "
+                + EGRESS_ATTEMPTS + " attempts. Last raw output:\n" + lastOut);
     }
 
     private static final int EGRESS_ATTEMPTS = 3;

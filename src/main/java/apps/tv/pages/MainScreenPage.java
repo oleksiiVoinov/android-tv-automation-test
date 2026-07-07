@@ -234,10 +234,10 @@ public class MainScreenPage extends BasePage {
 
     @Step("Verify the VPN reports connected in the UI (status CONNECTED + timer running)")
     public MainScreenPage verifyConnected() {
-        boolean connected = waitForText(connectStatus, STATUS_CONNECTED, Duration.ofSeconds(30));
+        boolean connected = waitForText(connectStatus, STATUS_CONNECTED, Duration.ofSeconds(45));
         attachScreenToReport("After connect");
         Assert.assertTrue(connected,
-                "VPN did not report CONNECTED within 30s. Current status: " + textOf(connectStatus));
+                "VPN did not report CONNECTED within 45s. Current status: " + textOf(connectStatus));
         Assert.assertNotEquals(textOf(timeConnectedValue), TIME_IDLE,
                 "Connection timer is still idle (--:--:--) after connecting");
         return this;
@@ -308,6 +308,41 @@ public class MainScreenPage extends BasePage {
         dpad.focusOnAndSelect(connectButton);
         waitForText(connectStatus, STATUS_DISCONNECTED, Duration.ofSeconds(15));
         return this;
+    }
+
+    public boolean isConnected() {
+        return STATUS_CONNECTED.equalsIgnoreCase(textOf(connectStatus));
+    }
+
+    /** Ensures the VPN is disconnected (no-op if already off). */
+    @Step("Ensure the VPN is disconnected")
+    public MainScreenPage ensureDisconnected() {
+        if (isConnected()) {
+            disconnect();
+        }
+        return this;
+    }
+
+    /**
+     * Ensures the VPN is connected. First waits for an auto-connect to settle (selecting a server
+     * kicks one off) to avoid a race where pressing Connect mid-handshake cancels it; only presses
+     * Connect if it hasn't come up on its own.
+     */
+    @Step("Ensure the VPN is connected")
+    public MainScreenPage ensureConnected() {
+        if (waitForText(connectStatus, STATUS_CONNECTED, Duration.ofSeconds(45))) {
+            return this;
+        }
+        pressConnect();
+        return verifyConnected();
+    }
+
+    /** Forces a fresh tunnel: disconnect, then reconnect to the currently selected server. */
+    @Step("Reconnect the VPN")
+    public MainScreenPage reconnect() {
+        ensureDisconnected();
+        pressConnect();
+        return verifyConnected();
     }
 
     public String selectedLocation() {

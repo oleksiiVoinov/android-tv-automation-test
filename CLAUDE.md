@@ -114,6 +114,7 @@ src/
         ├── ReinstallTest.java                       # uninstall + install APK from apps/installation
         ├── HelpSupportTest.java, PrivacyNoticeTest.java, TermsOfServiceTest.java, SignOutTest.java
         ├── SplitTunnelingTest.java                  # split tunneling: exclude an app + persistence
+        │                                            #   + real per-app egress re-route (run-as)
         └── regression.xml                           # TestNG suite (register new classes here)
 ```
 
@@ -213,3 +214,24 @@ still overrides). The premium test account must exist in the selected env.
   UiAutomator2/box hiccup on driver startup (box memory is tight). Re-running the class clears it; not a test-logic bug.
 - **`uiautomator dump` is flaky on the box** (sometimes "Killed") — rebooting the box helps.
 - **SauceLabs** — real-device cloud has no Android TV; TV tests run on physical boxes only.
+
+## Egress verification (per-app and shell)
+
+Ground-truth egress geo is fetched on-device via raw HTTP over toybox `nc` to `ip-api.com` (curl/wget
+absent; HTTP because nc has no TLS). `CommandsADB` (both with a 3× retry):
+- `deviceEgressJson(udid)` — runs as the **adb shell uid** (covered by the tunnel by default).
+- `appEgressJson(udid, pkg)` — runs as a **specific app's uid** via `run-as <pkg>`, so it reflects
+  that app's split-tunneling routing. Requires a **debuggable** package — `io.appium.settings`
+  (always installed, uid e.g. 10052) works; release apps (Netflix, the VPN app) are not debuggable
+  so `run-as` fails.
+
+`SplitTunnelingTest.splitTunnelingReroutesAppTraffic` proves the real effect: real country (VPN off)
+→ connect to a server in another country → included app egresses via the server country → exclude the
+app → **reconnect** → app egresses via the real country again.
+
+- **Split-tunnel changes need a VPN reconnect to apply** — toggling an app's checkbox does NOT
+  re-route a live tunnel; the VpnService only re-applies its allowed/disallowed uids on re-establish
+  (`MainScreenPage.reconnect()`). Verified on device.
+- **Connecting: avoid a mid-handshake Connect press** — selecting a server auto-starts the tunnel;
+  `ensureConnected()` waits for CONNECTED first and only presses Connect if it didn't come up
+  (pressing during the handshake cancels it).
