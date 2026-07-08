@@ -56,6 +56,54 @@ adb devices -l
 Appium is **not** managed by default (`manageAppium=false`) — start it manually
 (`appium --port 4732`) before a run, or pass `-DmanageAppium=true`.
 
+> The `appium --port 4732` server above is for running the **gradle test suite**. It is
+> **unrelated** to the Appium MCP used for interactive inspection — see the *Appium MCP* section.
+
+## Appium MCP (interactive inspection & locator discovery)
+
+For exploring screens and discovering locators from chat (Cowork), use the `appium-mcp` MCP
+server. It runs in **embedded mode** — the UiAutomator2 driver is bundled inside `appium-mcp`,
+so there is **no** separate Appium server and **no** `remoteServerUrl` (do not confuse it with
+the `:4732` gradle server above).
+
+**Shared server caveat.** There is one MCP server, and its `CAPABILITIES_CONFIG` points at the
+**phone** project's caps. So a bare `action=create` would launch with phone defaults (wrong
+`appActivity`). For TV, **pass the TV capabilities inline** on create — take them from this
+project's [`appium-mcp-caps.json`](./appium-mcp-caps.json):
+
+```
+appium_session_management  action=create  platform=android
+capabilities: {
+  "appium:appPackage": "com.free.vpn.super.hotspot.open",
+  "appium:appActivity": "com.superunlimited.androidTv.presentation.splash.TvSplashActivity",
+  "appium:appWaitActivity": "com.superunlimited.androidTv.presentation.main.TvMainActivity",
+  "appium:noReset": true,
+  "appium:autoGrantPermissions": true
+}
+```
+
+Why these: `TvMainActivity` is **not exported** — launch via the exported leanback
+`TvSplashActivity` (`appActivity`) and wait for `TvMainActivity` (`appWaitActivity`), else
+`SecurityException` (see Known Gotchas).
+
+**Device (network adb).** `udid` is intentionally **not** hardcoded in `appium-mcp-caps.json`
+(keeps it committable). First bring the box online, then let the driver pick it:
+
+```bash
+adb connect 192.168.50.207:5555   # network adb — see Device connection
+adb devices -l
+```
+
+With a single connected device the embedded driver auto-selects it. If more than one device is
+attached, call `select_device` (`platform=android`) and choose the `ip:port` udid before creating
+the session. If only TV work is planned for a while, you can instead point the MCP's
+`CAPABILITIES_CONFIG` at this file (edit the Claude Desktop config + restart) and drop the inline caps.
+
+**Interaction model reminder:** TV has no touch — after finding an element, drive it with the
+D-pad (`appium_mobile_press_key` with `KEYCODE_DPAD_*` / `KEYCODE_DPAD_CENTER`), mirroring
+`DpadNavigator`. `appium_gesture` taps are for the phone build. Useful tools: `appium_screenshot`,
+`appium_get_page_source`, `generate_locators`, `appium_find_element`.
+
 ## Configuration
 
 Runtime config is resolved in priority order (same as the phone project):

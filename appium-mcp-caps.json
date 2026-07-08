@@ -1,0 +1,12 @@
+{
+  "android": {
+    "platformName": "Android",
+    "appium:automationName": "UiAutomator2",
+    "appium:appPackage": "com.free.vpn.super.hotspot.open",
+    "appium:appActivity": "com.superunlimited.androidTv.presentation.splash.TvSplashActivity",
+    "appium:appWaitActivity": "com.superunlimited.androidTv.presentation.main.TvMainActivity",
+    "appium:noReset": true,
+    "appium:newCommandTimeout": 0,
+    "appium:autoGrantPermissions": true
+  }
+}
