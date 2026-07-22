@@ -111,7 +111,8 @@ public class SplitTunnelingPage extends BasePage {
         // On this screen a first click only moves focus onto the row; a second click toggles it.
         switchOf(name).click();          // 1st: focus the target row
         pause(Duration.ofMillis(400));
-        switchOf(name).click();          // 2nd: toggle its checkbox
+        switchOf(name).click();
+        pause(Duration.ofMillis(400));// 2nd: toggle its checkbox
         for (int i = 0; i < 10 && isAppChecked(name) != desiredChecked; i++) {
             pause(Duration.ofMillis(300));
         }
