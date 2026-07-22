@@ -85,6 +85,8 @@ public class MainScreenPage extends BasePage {
                 case "Super":
                     protocols.add(Protocols.Super);
                     break;
+                case "supx_v22":
+                    protocols.add(Protocols.supx_v22);
                 default:
                     throw new IllegalStateException("Unknown protocol on start page.");
             }

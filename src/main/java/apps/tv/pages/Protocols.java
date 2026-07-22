@@ -11,6 +11,7 @@ public enum Protocols {
     OpenVPN("OpenVPN"),
     OpenVPNTCP("OpenVPN TCP"),
     OpenVPNUDP("OpenVPN UDP"),
+    supx_v22("supx_v22"),
     V2Ray("V2Ray");
 
     public final String label;
