@@ -1,12 +1,15 @@
 package apps.tv.pages;
 
 import apps.tv.api.WebAuth;
+import apps.tv.web.Browser;
 import driver.TestContext;
 import io.qameta.allure.Step;
 import org.openqa.selenium.By;
+import org.openqa.selenium.WebElement;
 import org.testng.Assert;
 
 import java.time.Duration;
+import java.util.List;
 
 /**
  * Welcome / Sign-in screens of the Android TV app (locators verified on device).
@@ -104,6 +107,71 @@ public class SignInPage extends BasePage {
         WebAuth.forEnvironment(testContext.getEnvironment()).signInWithCode(email, password, code);
         fluentVisibility(connectButton, Duration.ofSeconds(40));
         System.out.println("✅ TV signed in via API");
+        return new MainScreenPage(testContext);
+    }
+
+    /**
+     * Full login via a real browser (instead of the API): open Sign in on the TV, read the device
+     * code, then on the account web frontend — sign in (email → password) and approve the code on
+     * the /tv page — and wait for the TV app to land on the main screen.
+     */
+    @Step("Log in via browser (approve the TV device code on the web)")
+    public MainScreenPage loginBrowser(String email, String password) {
+        openSignIn();
+        System.out.println("📺 TV device code (initial): "
+                + fluentVisibility(signInCode, Duration.ofSeconds(15)).getText().trim());
+
+        String base = testContext.getEnvironment().getBaseUrl();
+        try (Browser web = new Browser(true)) {          // headful: reCAPTCHA is friendlier than headless
+            // The /tv link redirects to the account sign-in (carrying the device context).
+            System.out.println("🌐 open /tv");
+            web.open(base + "/tv");
+            web.sleep(Duration.ofSeconds(2));
+
+            // Cookie-consent banner (CookieYes) — dismiss it (best-effort: Reject, else Accept).
+            if (!web.clickButtonByText("Reject All")) {
+                web.sleep(Duration.ofSeconds(1));
+                web.clickButtonByText("Accept All");
+            }
+            web.sleep(Duration.ofMillis(600));
+
+            // 1. Sign in: email → Continue → "Continue with Password" → email + password → Sign in.
+            System.out.println("🌐 email → Continue");
+            web.type(By.cssSelector("input[type='email']"), email);
+            System.out.println("   Continue: " + web.clickButtonByText("Continue"));
+            web.sleep(Duration.ofSeconds(2));
+            System.out.println("🌐 choose 'Continue with Password': " + web.clickButtonByText("Continue with Password"));
+            // Wait for the password field to appear, then fill password (email is best-effort).
+            web.waitVisible(By.cssSelector("input[name='password']"), Duration.ofSeconds(10));
+            web.typeIfPresent(By.cssSelector("input[name='email']:not([type='hidden'])"), email);
+            web.type(By.cssSelector("input[name='password']"), password);
+            System.out.println("   Sign in: " + web.clickButtonByText("Sign in"));
+            web.sleep(Duration.ofSeconds(4));
+
+            // 2. Enter the TV device code. Re-read it FRESH now (the code rotates on the TV, and the
+            //    browser login above takes tens of seconds — the initial code would be stale).
+            if (!web.url().contains("/tv")) {
+                System.out.println("🌐 open /tv (code entry). url was: " + web.url());
+                web.open(base + "/tv");
+                web.sleep(Duration.ofSeconds(2));
+            }
+            String code = fluentVisibility(signInCode, Duration.ofSeconds(10)).getText().trim();
+            System.out.println("📺 TV device code (fresh): " + code);
+
+            List<WebElement> boxes = web.findAll(By.cssSelector("input[type='text']"));
+            System.out.println("🌐 code boxes found: " + boxes.size());
+            for (int i = 0; i < code.length() && i < boxes.size(); i++) {
+                boxes.get(i).click();
+                boxes.get(i).sendKeys(String.valueOf(code.charAt(i)));
+            }
+            // Entering the 6th digit auto-submits (the button flips to "Sending…"); click as a fallback.
+            web.sleep(Duration.ofSeconds(1));
+            web.clickButtonByText("Confirm");
+            web.waitVisible(By.xpath("//h1[contains(., 'successfully signed in on TV')]"), Duration.ofSeconds(20));
+        }
+
+        fluentVisibility(connectButton, Duration.ofSeconds(60));
+        System.out.println("✅ TV signed in via browser");
         return new MainScreenPage(testContext);
     }
 

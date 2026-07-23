@@ -73,12 +73,12 @@ public class SignInTest extends BaseTest {
             Steps:
             1. go to the welcome screen
             2. open Sign in and read the device code
-            3. approve the code via the account API (verify → authorize)
+            3. approve the code via browser
             4. verify the app lands on the main screen""")
     public void signIn() {
         new SignInPage(testContext)
                 .navigateToWelcome()
-                .login(RuntimeConfig.getRequired("tvEmail"), RuntimeConfig.getRequired("tvPassword"))
+                .loginBrowser(RuntimeConfig.getRequired("tvEmail"), RuntimeConfig.getRequired("tvPassword"))
                 .verifyDisconnected();
     }
 }

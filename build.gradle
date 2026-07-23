@@ -118,6 +118,9 @@ dependencies {
 
     // Server-list API v7 (encrypted response + JSON models)
     implementation 'com.google.code.gson:gson:2.13.2'
+
+    // Browser login uses Selenium (already on the classpath above via selenium-java); Selenium Manager
+    // auto-provisions ChromeDriver — no extra dependency needed.
 }
 
 /** =========================
