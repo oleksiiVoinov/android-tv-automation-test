@@ -1,0 +1,23 @@
+# Git-ignored local runtime config.
+# UDID of the Android TV device. For a network-attached box use ip:port.
+udid=192.168.50.207:5555
+environment=prod
+appiumHost=127.0.0.1
+appiumPort=4732
+manageAppium=false
+# Attach screen recording to Allure for ALL tests (not only failures).
+videoRecord=true
+
+# Premium staging test account (TV gate requires premium). Never commit these.
+# tvEmail=testqa+a1@test.com
+# tvPassword=Test@123
+tvEmail=testprod+47@test.com
+tvPassword=VpnSuper@123
+
+
+# Server-list API v7 (encrypted). AES key used to decode the response. Never commit.
+serverListKey=01fb3864e37eb5d4ada3a50a1f1a373e
+# Optional overrides (defaults: region=UA, serverlistUrl=https://dev-api.mobilejump.mobi)
+region=UA
+serverlistUrl=https://dev-api.mobilejump.mobi
+testomatioApiKey=tstmt_iKfFB3LArebj3QrCFqjyIp-Ivl5to9y0Lg1769678898

@@ -20,3 +20,20 @@ serverListKey=
 # Optional overrides (defaults shown).
 region=UA
 serverlistUrl=https://dev-api.mobilejump.mobi
+
+# ---- Testomat.io reporting (see TESTOMATIO.md) ----
+# The switch: true  -> a run is created in Testomat.io and every result is reported into it
+#             false -> nothing is sent at all (not a single request)
+# -Dtestomatio=true on the command line overrides this file.
+testomatio=false
+
+# Close the AUTOMATED half of the run when the suite ends, so the run can be finished in the UI.
+# Safe here: the TV suite runs in one JVM. (In the phone project two device suites share one run,
+# there this must stay false.) The run itself is still closed by a human — "Finish Run" after review.
+testomatioFinishRun=true
+
+# Title of the created run. Leave empty for "<suite> — dd.MM.yyyy HH:mm".
+testomatioRunTitle=
+
+# Project Reporting API key (Settings -> Project). Never commit a real key.
+testomatioApiKey=

@@ -1,0 +1,171 @@
+{
+ "project": "android-f0d8b",
+ "root_suite": "1882fcfb",
+ "generated_from": [
+  "src/test/java/apps/tv/regression/regression.xml"
+ ],
+ "tests": {
+  "apps.tv.regression.ReinstallTest#reinstallApp/0": {
+   "id": "4530f9a0",
+   "title": "Reinstall the app via adb from the local APK",
+   "suite_id": "a48427cc",
+   "suite_title": "1. Reinstall app",
+   "feature": "1. Installation"
+  },
+  "apps.tv.regression.SignUpTest#validateSignUp/0": {
+   "id": "d67d68a6",
+   "title": "Verify the sign-up screen shows the QR and its controls",
+   "suite_id": "4fd0a8e6",
+   "suite_title": "1. Sign up",
+   "feature": "1. Sign up"
+  },
+  "apps.tv.regression.SignUpTest#signInInsteadRedirects/0": {
+   "id": "9eb3e2bb",
+   "title": "'Sign In Instead' on the sign-up screen redirects to Sign in",
+   "suite_id": "4fd0a8e6",
+   "suite_title": "1. Sign up",
+   "feature": "1. Sign up"
+  },
+  "apps.tv.regression.SignInTest#validateWelcome/0": {
+   "id": "78070755",
+   "title": "Verify the welcome screen shows headline, Sign in and Sign up",
+   "suite_id": "81f4b088",
+   "suite_title": "1. Login",
+   "feature": "1. Login"
+  },
+  "apps.tv.regression.SignInTest#validateSignIn/0": {
+   "id": "95b94207",
+   "title": "Verify the sign-in screen shows the QR, device code and web link",
+   "suite_id": "81f4b088",
+   "suite_title": "1. Login",
+   "feature": "1. Login"
+  },
+  "apps.tv.regression.SignInTest#signIn/0": {
+   "id": "3010277f",
+   "title": "Log in via the device code and reach the main screen",
+   "suite_id": "81f4b088",
+   "suite_title": "1. Login",
+   "feature": "1. Login"
+  },
+  "apps.tv.regression.HelpSupportTest#openHelpSupport/0": {
+   "id": "330db690",
+   "title": "'Help & Support' menu item opens the Help & Support screen",
+   "suite_id": "770df00f",
+   "suite_title": "Help & Support",
+   "feature": "4. Settings menu"
+  },
+  "apps.tv.regression.PrivacyNoticeTest#openPrivacyNotice/0": {
+   "id": "9a3174f4",
+   "title": "'Privacy Notice' menu item opens the Privacy Notice screen",
+   "suite_id": "1266bd0b",
+   "suite_title": "Privacy Notice",
+   "feature": "4. Settings menu"
+  },
+  "apps.tv.regression.TermsOfServiceTest#openTermsOfService/0": {
+   "id": "067afad5",
+   "title": "'Terms of Service' menu item opens the Terms of Service screen",
+   "suite_id": "5a2361ca",
+   "suite_title": "Terms of Service",
+   "feature": "4. Settings menu"
+  },
+  "apps.tv.regression.SplitTunnelingTest#validateSplitTunnelingDisplayed/0": {
+   "id": "7366970d",
+   "title": "Split tunneling screen opens and shows the app list",
+   "suite_id": "2ee6c102",
+   "suite_title": "Split Tunneling",
+   "feature": "4. Settings menu"
+  },
+  "apps.tv.regression.SplitTunnelingTest#excludingOneAppAffectsOnlyThatApp/0": {
+   "id": "de98eab7",
+   "title": "Excluding one app unchecks only that app and the exclusion persists",
+   "suite_id": "2ee6c102",
+   "suite_title": "Split Tunneling",
+   "feature": "4. Settings menu"
+  },
+  "apps.tv.regression.SplitTunnelingTest#splitTunnelingReroutesAppTraffic/0": {
+   "id": "1a3d37f8",
+   "title": "Split tunneling really re-routes a specific app's traffic",
+   "suite_id": "2ee6c102",
+   "suite_title": "Split Tunneling",
+   "feature": "4. Settings menu"
+  },
+  "apps.tv.regression.SignOutTest#declineKeepsSignedIn/0": {
+   "id": "0070a743",
+   "title": "Decline on the sign-out dialog keeps the user signed in",
+   "suite_id": "d3a9c900",
+   "suite_title": "Sign Out",
+   "feature": "4. Settings menu"
+  },
+  "apps.tv.regression.SignOutTest#signOut/0": {
+   "id": "87547ef0",
+   "title": "Confirm sign out leads to the signed-out screen and the welcome screen",
+   "suite_id": "d3a9c900",
+   "suite_title": "Sign Out",
+   "feature": "4. Settings menu"
+  },
+  "apps.tv.regression.MainScreenPageTest#validationPage/0": {
+   "id": "a096d4ec",
+   "title": "Verify the TV main screen shows all expected elements after sign-in",
+   "suite_id": "c8c72d8c",
+   "suite_title": "2. Main screen"
+  },
+  "apps.tv.regression.MainScreenPageTest#validationDebug/0": {
+   "id": "7ee2dead",
+   "title": "Debug menu exists on dev and does not exist on production",
+   "suite_id": "c8c72d8c",
+   "suite_title": "2. Main screen"
+  },
+  "apps.tv.regression.ServerListTest#validation/0": {
+   "id": "fe3356c5",
+   "title": "Verify the server list screen shows its key elements",
+   "suite_id": "f2480833",
+   "suite_title": "4. Server List"
+  },
+  "apps.tv.regression.ServerListTest#sortServer/0": {
+   "id": "2d67ca63",
+   "title": "Verify the sort control changes the server list ordering mode",
+   "suite_id": "f2480833",
+   "suite_title": "4. Server List"
+  },
+  "apps.tv.regression.ServerListTest#searchServer/0": {
+   "id": "900d2b5c",
+   "title": "Search a server and connect to the found result",
+   "suite_id": "f2480833",
+   "suite_title": "4. Server List"
+  }
+ },
+ "parametrized": {
+  "apps.tv.regression.ProtocolsTest#checkProtocol/1": {
+   "IKEv2": {
+    "id": "ebb66b83",
+    "title": "Connect while keeping the selected server's country — IKEv2",
+    "suite_id": "d0f721e4",
+    "suite_title": "3. Protocols"
+   },
+   "Super": {
+    "id": "ecee139c",
+    "title": "Connect while keeping the selected server's country — Super",
+    "suite_id": "d0f721e4",
+    "suite_title": "3. Protocols"
+   },
+   "OpenVPNTCP": {
+    "id": "84b1208f",
+    "title": "Connect while keeping the selected server's country — OpenVPN TCP",
+    "suite_id": "d0f721e4",
+    "suite_title": "3. Protocols"
+   },
+   "OpenVPNUDP": {
+    "id": "00d35aac",
+    "title": "Connect while keeping the selected server's country — OpenVPN UDP",
+    "suite_id": "d0f721e4",
+    "suite_title": "3. Protocols"
+   },
+   "V2Ray": {
+    "id": "794350eb",
+    "title": "Connect while keeping the selected server's country — V2Ray",
+    "suite_id": "d0f721e4",
+    "suite_title": "3. Protocols"
+   }
+  }
+ }
+}

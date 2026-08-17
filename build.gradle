@@ -40,7 +40,26 @@ def runtimePropertyConfig = [
         appiumLogs   : [env: ["APPIUM_LOGS", "appiumLogs"], defaultValue: "false"],
         manageAppium : [env: ["MANAGE_APPIUM"], defaultValue: "false"],
         environment  : [env: ["ENVIRONMENT"], defaultValue: "dev"],
-        udid         : [aliases: ["UDID"], env: ["UDID"], required: true]
+        udid         : [aliases: ["UDID"], env: ["UDID"], required: true],
+
+        /** ---- Testomat.io run reporting (see TESTOMATIO.md) ---- */
+        // master switch: false → nothing is sent to Testomat.io
+        testomatio          : [env: ["TESTOMATIO_ENABLED"], defaultValue: "false"],
+        // TESTOMATIO is the env var name used by official testomat.io reporters — kept for compatibility
+        testomatioApiKey    : [aliases: ["TESTOMATIO_API_KEY"], env: ["TESTOMATIO_API_KEY", "TESTOMATIO"]],
+        testomatioRunId     : [env: ["TESTOMATIO_RUN_ID"]],
+        testomatioRunTitle  : [env: ["TESTOMATIO_TITLE"]],
+        testomatioRunGroup  : [env: ["TESTOMATIO_RUNGROUP_TITLE"]],
+        testomatioEnv       : [env: ["TESTOMATIO_ENV"]],
+        // mixed → the run can be re-checked by hand in Testomat.io UI; automated → read-only report
+        testomatioRunKind   : [env: ["TESTOMATIO_RUN_KIND"], defaultValue: "mixed"],
+        // suites the run is pre-filled with (default: root_suite from the mapping → the TV manual
+        // checks are part of the run too); "none" → run contains only what the autotests reported
+        testomatioRunSuites : [env: ["TESTOMATIO_RUN_SUITES"]],
+        // false → run stays open, a human closes it in Testomat.io UI
+        testomatioFinishRun : [env: ["TESTOMATIO_FINISH_RUN"], defaultValue: "false"],
+        testomatioRunFile   : [env: ["TESTOMATIO_RUN_FILE"]],
+        testomatioBaseUrl   : [env: ["TESTOMATIO_URL"]]
 ]
 
 def resolveRuntimeProperty = { String propertyName, Map config = [:] ->
@@ -119,6 +138,9 @@ dependencies {
     // Server-list API v7 (encrypted response + JSON models)
     implementation 'com.google.code.gson:gson:2.13.2'
 
+    // Testomat.io reporting (same code as the phone project, which uses org.json)
+    implementation 'org.json:json:20240303'
+
     // Browser login uses Selenium (already on the classpath above via selenium-java); Selenium Manager
     // auto-provisions ChromeDriver — no extra dependency needed.
 }
@@ -133,7 +155,10 @@ tasks.withType(Test).configureEach {
         exceptionFormat = 'full'
     }
     ignoreFailures = true
-    useTestNG()
+    useTestNG {
+        // Reports every result into a Testomat.io run. Inert unless -Dtestomatio=true
+        listeners << 'apps.listeners.TestomatioListener'
+    }
     maxHeapSize = "2g"
 
     jvmArgs = [
@@ -163,4 +188,40 @@ tasks.register('regressionTest', Test) {
     useTestNG {
         suites "src/test/java/apps/tv/regression/regression.xml"
     }
+}
+
+/** =========================
+ *  Testomat.io run management (see TESTOMATIO.md)
+ *  ========================= */
+def testomatioSystemProperties = { JavaExec task ->
+    def pass = { String key, Object value ->
+        if (hasText(value)) {
+            task.systemProperty key, value.toString().trim()
+        }
+    }
+    // only testomatio* / environment keys are forwarded, from all the usual sources
+    ["testomatio", "testomatioApiKey", "testomatioRunId", "testomatioRunTitle", "testomatioRunGroup",
+     "testomatioEnv", "testomatioRunKind", "testomatioRunSuites", "testomatioFinishRun",
+     "testomatioRunFile", "testomatioBaseUrl",
+     "environment"].each { key ->
+        pass(key, resolveRuntimeProperty(key, (runtimePropertyConfig[key] ?: [:]) as Map))
+    }
+}
+
+tasks.register('testomatioCreateRun', JavaExec) {
+    group = 'verification'
+    description = 'Creates a Testomat.io run and prints TESTOMATIO_RUN_ID=<uid> (pass it to the test task)'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'apps.tv.api.testomatio.TestomatioRunCli'
+    args 'create'
+    doFirst { testomatioSystemProperties(it as JavaExec) }
+}
+
+tasks.register('testomatioFinishRun', JavaExec) {
+    group = 'verification'
+    description = 'Closes the automated half of a Testomat.io run (-DtestomatioRunId=<uid>)'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'apps.tv.api.testomatio.TestomatioRunCli'
+    args 'finish'
+    doFirst { testomatioSystemProperties(it as JavaExec) }
 }

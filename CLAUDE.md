@@ -51,6 +51,12 @@ allure serve build/allure-results
 
 # List connected devices
 adb devices -l
+
+# Run the regression and report it into a Testomat.io run (see TESTOMATIO.md).
+# No Jenkins job for TV — started from a terminal. Switch lives in local.properties:
+#   testomatio=true/false + testomatioApiKey=tstmt_…
+./gradlew regressionTest -Dudid=192.168.50.207:5555
+./gradlew regressionTest -Dudid=192.168.50.207:5555 -Dtestomatio=true   # force reporting on
 ```
 
 Appium is **not** managed by default (`manageAppium=false`) — start it manually
@@ -118,6 +124,10 @@ Runtime config is resolved in priority order (same as the phone project):
 | `appiumPort` | `4732` | Appium server port |
 | `manageAppium` | `false` | Auto start/stop Appium server |
 | `environment` | `dev` | `dev` or `prod` |
+| `testomatio` | `false` | **Switch**: report results into a Testomat.io run. Keep it in `local.properties`, override per run with `-Dtestomatio=true/false` |
+| `testomatioApiKey` | — | Testomat.io project key `tstmt_…` (git-ignored) |
+| `testomatioFinishRun` | `false` | Close the automated half of the run when the suite ends (`true` in `local.properties.example` — safe for TV, single JVM) |
+| `testomatio*` | — | run id / title / kind / suites — full table in `TESTOMATIO.md` |
 
 **Never commit credentials.** `tvEmail`/`tvPassword`/`serverListKey` live only in git-ignored
 `local.properties`; only `local.properties.example` (blanks) is tracked.
@@ -133,7 +143,9 @@ src/
 │   │   └── tv/
 │   │       ├── api/
 │   │       │   ├── WebAuth.java            # device-code sign-in (RestAssured + JWE)
-│   │       │   └── serverlist/            # ServerList + V7 models + ResponseDecoder + localization
+│   │       │   ├── serverlist/            # ServerList + V7 models + ResponseDecoder + localization
+│   │       │   └── testomatio/            # Testomat.io run reporting — see TESTOMATIO.md
+│   │       │                              #   Config / Client / Mapping / Reporter / RunCli
 │   │       └── pages/
 │   │           ├── Wait.java               # Fluent waits
 │   │           ├── DpadNavigator.java      # D-pad focus navigation + OK  ← core TV abstraction
@@ -151,11 +163,14 @@ src/
 │   │           ├── SplitTunnelingPage.java   # Split tunneling app list (per-app VPN include/exclude)
 │   │           └── Protocols.java          # protocol enum (Auto / IKEv2 / OpenVPN / ...)
 │   ├── configs/                           # RuntimeConfig, AppiumConfig, Port, app/devices/platformConfig
+│   ├── resources/testomatio-mapping.json  # Class#method → Testomat.io case id (the only link)
 │   └── driver/                            # TestContext, AndroidContext
 └── test/java/apps/
     ├── BaseTest.java                       # @BeforeSuite: device online + Appium; @BeforeClass: initDriver
     │                                       #   + grant VPN consent. NO auto sign-in (see Navigation).
     ├── ConfigRecordingListener.java        # screenshots + video attachments
+    ├── listeners/TestomatioListener.java   # reports every result into a Testomat.io run
+    │                                       #   (registered in build.gradle, inert unless -Dtestomatio=true)
     └── tv/regression/
         ├── LoginTest.java, SignUpTest.java         # start from a clean slate (own precondition)
         ├── MainScreenPageTest.java, ProtocolsTest.java, ServerListTest.java
@@ -198,7 +213,48 @@ clean screen (chain `.goBack()`).
 5. Create the test under `apps/tv/regression/` extending `BaseTest`; add Allure annotations
    (`@Epic`, `@Feature`, `@Story`, `@Severity`, `@Description` with Objective + Steps).
 6. Register the class in `regression.xml`.
-7. **Update the relevant sections of this CLAUDE.md** (locators, structure, conventions).
+7. Export the new test to Testomat.io and add it to `testomatio-mapping.json` — see
+   *Testomat.io* below. Until that is done the run logs `[testomatio] not mapped: …`.
+8. **Update the relevant sections of this CLAUDE.md** (locators, structure, conventions).
+
+## Testomat.io (test-case management & run reporting)
+
+Full contract: [`TESTOMATIO.md`](./TESTOMATIO.md). Short version:
+
+- project `android-f0d8b`, TV subtree root suite **`1882fcfb`** (🤖 `TV Regression (Auto and Manual)`, inside `Master`, next to the phone `Regression (Auto and Manual)`);
+  manual TV checks live in `Manual` = `5198b93f` and are **never** touched by the sync;
+- **24 cases** = 19 plain + 5 per-protocol, mirroring the Allure behaviors tree of `regression.xml`;
+- `src/main/resources/testomatio-mapping.json` maps `<FQCN>#<method>/<paramCount>` → case id.
+  **Never put Testomat.io ids into Java code**; the per-protocol rows are keyed by the *enum constant*
+  (`OpenVPNTCP`), not the on-screen label;
+- reporting is off unless `-Dtestomatio=true`; the run is created as `mixed` and pre-filled with the
+  whole TV subtree, and it is **not** closed automatically — a human finishes it after the
+  review. The automated half must be closed by `./gradlew testomatioFinishRun -DtestomatioRunId=…`,
+  otherwise the run hangs in "automated part not finished";
+- the code is a copy of the phone project's `apps/multiplatform/api/testomatio` with the package
+  renamed — fix a bug in one place, port it to the other.
+
+### Keeping Testomat.io in sync — the `testomatio-tv-sync` skill
+
+`.claude/skills/testomatio-tv-sync/` — the workflow for exporting new/renamed/moved TV tests. It owns
+only the suites that mirror a `@Feature` / `@Story`; the `Manual` folder is off limits. Its diff script
+is the fast way to see what drifted:
+
+```bash
+python3 .claude/skills/testomatio-tv-sync/scripts/testomatio_tv_diff.py          # human report
+python3 .claude/skills/testomatio-tv-sync/scripts/testomatio_tv_diff.py --json    # machine readable
+```
+
+Sections: `NEW`, `REMOVED`, `MOVED`, `DATA_VALUES` (per-protocol cases), `ENUM_DRIFT`, `NO_STORY`,
+`TITLE_REVIEW`. `ENUM_DRIFT` normally lists `OpenVPN` and `supx_v22` — they exist in the `Protocols`
+enum but the TV grid does not show them, so they have no cases. That is expected noise, not a defect.
+
+The protocol grid is hardcoded in the script as `GRID_PROTOCOLS` (the real set only exists on the
+screen of the box) — when a build starts showing a new protocol, add the case **and** the value there.
+
+The same skill is also installed in Oleksii's Claude profile so it triggers from chat; the phone
+project has its own twin, `testomatio-sync` (root suite `fd90d89e`). Keep the two copies of a script
+identical after a fix.
 
 ## Known TV locators (verified on device)
 
