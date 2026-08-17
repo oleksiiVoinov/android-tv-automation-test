@@ -70,6 +70,7 @@ below and compares the result with `src/main/resources/testomatio-mapping.json`.
 |---|---|---|
 | `NEW` | `@Test` method with no case in Testomat.io | Step 3 |
 | `REMOVED` | mapping entry whose method is gone | Step 4 |
+| `COMMENTED_OUT` | case exists, but the `@Test` is commented out in the code | Step 4 — it can never run |
 | `MOVED` | `@Feature` / `@Story` changed | Step 5 |
 | `DATA_VALUES` | the per-protocol case set drifted | Step 6 |
 | `ENUM_DRIFT` | `Protocols` enum has a constant that is neither in the known grid nor mapped | Step 6 |
@@ -188,9 +189,12 @@ Check the git history before acting:
 - **genuinely deleted** → **ask the user** whether to delete the case (`tests_delete`) or keep it as
   manual/deprecated. Never silently delete: cases carry run history and links.
 
-Watch for the TV-specific case of a test being **commented out** rather than deleted
-(`ServerListTest#selectServer` is). A commented-out test has no case on purpose — do not create one,
-and do not report it as removed.
+**Commented-out tests are a separate story.** A `@Test` inside a `/* */` block still exists in the
+file, it is only switched off, so the script reports it as `COMMENTED_OUT`, never as `REMOVED`, and it
+is never reported as `NEW` either (`ServerListTest#selectServer` is such a case and has no
+Testomat.io case on purpose). When a case *does* exist for a commented-out test, ask the user:
+keep it (and say "⚠️ commented out in the code" in its description) or delete it. Never decide alone —
+the test is usually meant to come back.
 
 ---
 

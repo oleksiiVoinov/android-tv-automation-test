@@ -187,8 +187,7 @@ def annotation_values(block, strings):
 
 def parse_class(fqcn, src):
     """
-    Returns (methods, class_level) - class_level holds the @Feature / @Story put on the class itself,
-    which is where the TV suite keeps them.
+    Returns (methods, class_level) - class_level holds the @Feature / @Story put on the class itself.
     """
     masked, strings = mask_strings(src)
     masked = strip_comments(masked)
@@ -213,6 +212,27 @@ def parse_class(fqcn, src):
                         "method": m.group(1),
                         "params": len([p for p in params.split(",") if p.strip()])})
     return methods, class_level
+
+
+def commented_out_tests(src):
+    """
+    Method signatures that live inside a /* */ block which also contains an @Test.
+
+    Such a test still exists in the file, it is just switched off, so its case must be reported as
+    COMMENTED_OUT rather than REMOVED. Parsing the commented text as if it were code does not work:
+    the annotations there are prefixed by the comment marker.
+    """
+    masked, _ = mask_strings(src)
+    out = set()
+    for block in re.finditer(r"/\*.*?\*/", masked, re.S):
+        text = block.group(0)
+        if "@Test" not in text:
+            continue
+        for m in re.finditer(r"(?:public|protected|private)\s+(?:static\s+)?[\w<>\[\], .]+\s+(\w+)\s*\(([^)]*)\)",
+                             text):
+            params = len([p for p in m.group(2).split(",") if p.strip()])
+            out.add((m.group(1), params))
+    return out
 
 
 def objective(description):
@@ -244,13 +264,15 @@ def collect_code_tests():
             xml_duplicates.append(f'{e["fqcn"]} is listed twice in {e["suite_file"]}')
     entries = list(unique.values())
 
-    tests, missing_files = [], []
+    tests, missing_files, commented_keys = [], [], set()
     for e in entries:
         src = read_class(e["fqcn"])
         if src is None:
             missing_files.append(e["fqcn"])
             continue
         methods, class_level = parse_class(e["fqcn"], src)
+        for name, params in commented_out_tests(src):
+            commented_keys.add(f'{e["fqcn"]}#{name}/{params}')
         for m in methods:
             # a method annotation wins over the class annotation (Allure resolves it the same way)
             feature = m["feature"] or class_level["feature"]
@@ -260,7 +282,7 @@ def collect_code_tests():
                 feature, story = story, story
             tests.append({**e, **m, "feature": feature, "story": story,
                           "key": f'{e["fqcn"]}#{m["method"]}/{m["params"]}'})
-    return tests, missing_files, xml_duplicates
+    return tests, missing_files, xml_duplicates, commented_keys
 
 
 def enum_protocols():
@@ -327,11 +349,12 @@ def main():
     mapping = json.load(open(MAPPING, encoding="utf-8"))
     plain = mapping.get("tests", {})
     param = mapping.get("parametrized", {})
-    tests, missing_files, xml_duplicates = collect_code_tests()
+    tests, missing_files, xml_duplicates, commented_keys = collect_code_tests()
 
     report = {"new": [], "removed": [], "moved": [], "data_values": [],
               "no_story": [], "title_review": [], "enum_drift": [],
               "missing_files": missing_files,
+              "commented_out": [],
               "xml_duplicates": xml_duplicates, "totals": {}}
 
     code_keys = {t["key"] for t in tests}
@@ -375,7 +398,8 @@ def main():
         if key not in code_keys:
             ids = ([plain[key]["id"]] if key in plain
                    else [v.get("id") for v in param.get(key, {}).values()])
-            report["removed"].append({"key": key, "ids": ids})
+            bucket = "commented_out" if key in commented_keys else "removed"
+            report[bucket].append({"key": key, "ids": ids})
 
     enum_values = enum_protocols() or []
     for key, values in param.items():
@@ -402,6 +426,7 @@ def main():
         "mapping_parametrized_methods": len(param),
         "mapping_parametrized_cases": sum(len(v) for v in param.values()),
         "new": len(report["new"]), "removed": len(report["removed"]),
+        "commented_out": len(report["commented_out"]),
         "moved": len(report["moved"]), "data_values": len(report["data_values"]),
         "no_story": len(report["no_story"]), "title_review": len(report["title_review"]),
     }
@@ -432,6 +457,8 @@ def main():
                       f'severity={i["severity"]} dp={i["data_provider"]}\n       objective={i["objective"]!r}')
     section("REMOVED (case exists in Testomat.io, method is gone from the code)", report["removed"],
             lambda i: f'{i["key"]}  ids={i["ids"]}')
+    section("COMMENTED_OUT (case exists, the @Test is commented out in the code - it can never run)",
+            report["commented_out"], lambda i: f'{i["key"]}  ids={i["ids"]}')
     section("MOVED (@Feature / @Story changed - move the case)", report["moved"],
             lambda i: json.dumps(i, ensure_ascii=False))
     section("DATA_VALUES (per-value cases drifted from the code)", report["data_values"],
