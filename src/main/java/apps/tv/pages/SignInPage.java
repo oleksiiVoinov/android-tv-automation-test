@@ -161,7 +161,9 @@ public class SignInPage extends BasePage {
             List<WebElement> boxes = web.findAll(By.cssSelector("input[type='text']"));
             System.out.println("🌐 code boxes found: " + boxes.size());
             for (int i = 0; i < code.length() && i < boxes.size(); i++) {
+                pause(Duration.ofMillis(300));
                 boxes.get(i).click();
+                pause(Duration.ofMillis(600));
                 boxes.get(i).sendKeys(String.valueOf(code.charAt(i)));
             }
             // Entering the 6th digit auto-submits (the button flips to "Sending…"); click as a fallback.

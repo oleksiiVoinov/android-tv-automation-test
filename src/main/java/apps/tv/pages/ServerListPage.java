@@ -148,6 +148,7 @@ public class ServerListPage extends BasePage {
 
     @Step("Select server {server}")
     private void selectAliasName(String text) {
+        pause(Duration.ofSeconds(1));
         List<WebElement> elementList = fluentVisibility(
                 By.id("com.free.vpn.super.hotspot.open:id/server_popup_items_container"))
                 .findElements(By.className("android.widget.TextView"));
