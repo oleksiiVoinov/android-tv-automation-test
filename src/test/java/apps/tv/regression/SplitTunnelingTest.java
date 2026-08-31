@@ -24,7 +24,7 @@ import org.testng.annotations.Test;
  * Uses "Appium Settings" as the target (always installed) and "Apple TV" as a control app.
  */
 @Epic("Android TV")
-@Feature("4. Settings menu")
+@Feature("7. Settings menu")
 public class SplitTunnelingTest extends BaseTest {
 
     private static final String TARGET_APP = "Appium Settings";       // list label
@@ -43,7 +43,7 @@ public class SplitTunnelingTest extends BaseTest {
     }
 
     @Test(priority = 1, description = "Split tunneling screen opens and shows the app list")
-    @Story("Split Tunneling")
+    @Story("10. Split Tunneling")
     @Severity(SeverityLevel.NORMAL)
     @Description("""
             Objective: verify the 'Split Tunneling' menu item opens the app-manager screen
@@ -62,7 +62,7 @@ public class SplitTunnelingTest extends BaseTest {
     }
 
     @Test(priority = 2, description = "Excluding one app affects only that app and persists")
-    @Story("Split Tunneling")
+    @Story("10. Split Tunneling")
     @Severity(SeverityLevel.BLOCKER)
     @Description("""
             Objective: verify excluding a single app unchecks only that app (not the whole list)
@@ -112,7 +112,7 @@ public class SplitTunnelingTest extends BaseTest {
     }
 
     @Test(priority = 3, description = "Split tunneling actually re-routes a specific app's traffic")
-    @Story("Split Tunneling")
+    @Story("10. Split Tunneling")
     @Severity(SeverityLevel.BLOCKER)
     @Description("""
             Objective: prove split tunneling has a REAL effect on traffic for one app, measured

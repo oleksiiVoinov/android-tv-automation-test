@@ -128,6 +128,7 @@ public class MainScreenPage extends BasePage {
         focusProtocolRow();
         dpad.focusOnAndSelect(protocolLocator(protocol));
         confirmReconnectIfPresent();
+        pause(Duration.ofSeconds(3));
         return this;
     }
 

@@ -6,6 +6,7 @@ import configs.environment.envconfig.DevConfig;
 import configs.environment.envconfig.ProdConfig;
 import io.qameta.allure.Description;
 import io.qameta.allure.Epic;
+import io.qameta.allure.Feature;
 import io.qameta.allure.Severity;
 import io.qameta.allure.SeverityLevel;
 import io.qameta.allure.Story;
@@ -15,10 +16,11 @@ import org.testng.annotations.Test;
 import java.time.Duration;
 
 @Epic("Android TV")
+@Feature("4. Main screen")
 public class MainScreenPageTest extends BaseTest {
 
     @Test(priority = 1, description = "validation feature TV main screen")
-    @Story("2. Main screen")
+    @Story("04. Main screen")
     @Severity(SeverityLevel.BLOCKER)
     @Description("""
             Objective: verify the TV main screen shows all expected elements after sign-in
@@ -34,7 +36,7 @@ public class MainScreenPageTest extends BaseTest {
     }
 
     @Test(priority = 2, description = "checking for the existence of a debug menu")
-    @Story("2. Main screen")
+    @Story("04. Main screen")
     @Severity(SeverityLevel.BLOCKER)
     @Description("""
             Objective: Check for the existence of a debug menu

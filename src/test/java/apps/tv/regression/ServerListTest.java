@@ -11,11 +11,12 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 @Epic("Android TV")
+@Feature("6. Server List")
 public class ServerListTest extends BaseTest {
 
     ServerListPage list;
 
-    @Story("4. Server List")
+    @Story("06. Server List")
     @BeforeClass()
     public void precondition() {
         list = new MainScreenPage(testContext)
@@ -24,7 +25,7 @@ public class ServerListTest extends BaseTest {
     }
 
     @Test(priority = 1, description = "validate server list elements")
-    @Story("4. Server List")
+    @Story("06. Server List")
     @Severity(SeverityLevel.BLOCKER)
     @Description("""
             Objective: verify the server list screen shows its key elements
@@ -38,7 +39,7 @@ public class ServerListTest extends BaseTest {
     }
 
     @Test(priority = 2, description = "change server list sorting")
-    @Story("4. Server List")
+    @Story("06. Server List")
     @Severity(SeverityLevel.NORMAL)
     @Description("""
             Objective: verify the sort control changes the server list ordering mode
@@ -58,7 +59,7 @@ public class ServerListTest extends BaseTest {
     }
 
     @Test(priority = 3, description = "search a server and connect to it")
-    @Story("4. Server List")
+    @Story("06. Server List")
     @Severity(SeverityLevel.BLOCKER)
     @Description("""
             Objective: verify searching filters servers and a result can be selected to connect
@@ -81,7 +82,7 @@ public class ServerListTest extends BaseTest {
     }
 
 /*    @Test(priority = 4, description = "select a specific server and verify real egress country")
-    @Story("4. Server List")
+    @Story("06. Server List")
     @Severity(SeverityLevel.BLOCKER)
     @Description("""
             Objective: verify connecting to a chosen server routes real traffic through its country

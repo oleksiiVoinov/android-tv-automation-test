@@ -15,11 +15,11 @@ import org.testng.annotations.Test;
  * Validates the redirect: headline, support URL, QR and the Go back control.
  */
 @Epic("Android TV")
-@Feature("4. Settings menu")
+@Feature("7. Settings menu")
 public class HelpSupportTest extends BaseTest {
 
     @Test(priority = 1, description = "Help & Support menu item opens the Help & Support screen")
-    @Story("Help & Support")
+    @Story("07. Help & Support")
     @Severity(SeverityLevel.NORMAL)
     @Description("""
             Objective: verify the 'Help & Support' menu item redirects to the Help & Support screen

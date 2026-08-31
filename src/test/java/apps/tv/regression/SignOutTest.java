@@ -19,11 +19,11 @@ import org.testng.annotations.Test;
  * class logs back in automatically via the Navigator.
  */
 @Epic("Android TV")
-@Feature("4. Settings menu")
+@Feature("7. Settings menu")
 public class SignOutTest extends BaseTest {
 
     @Test(priority = 1, description = "Decline on the sign-out dialog keeps the user signed in")
-    @Story("Sign Out")
+    @Story("11. Sign Out")
     @Severity(SeverityLevel.NORMAL)
     @Description("""
             Objective: verify declining the sign-out confirmation keeps the user signed in
@@ -45,7 +45,7 @@ public class SignOutTest extends BaseTest {
     }
 
     @Test(priority = 2, description = "Confirm sign out → signed-out screen → welcome")
-    @Story("Sign Out")
+    @Story("11. Sign Out")
     @Severity(SeverityLevel.BLOCKER)
     @Description("""
             Objective: verify the full sign-out flow lands on the welcome screen (signed out)

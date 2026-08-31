@@ -25,11 +25,17 @@ public class SignInPage extends BasePage {
     public final By signUpButton = By.id(PKG + "btn_sign_up");
     // Sign-in screen (TvSignInActivity)
     public final By signInHeadline = By.id(PKG + "tv_sign_in_headline"); // "Scan the QR code to sign in"
+    public final By signInSubtitle = By.id(PKG + "tv_sign_in_subtitle"); // "Trouble scanning? Go to"
     public final By signInLink = By.id(PKG + "tv_sign_in_link");         // "https://vpnsuper.com/tv"
+    public final By signInSubtitleLine2 = By.id(PKG + "tv_sign_in_subtitle_line_2"); // "and use this code:"
     public final By signInCode = By.id(PKG + "tv_sign_in_code");         // device code
     public final By signInQr = By.id(PKG + "iv_sign_in_qr");
     public final By backButton = By.id(PKG + "btn_back");
-    // Sign-up screen (TvSignUpActivity)
+    /** "Restore purchase" — brings back a Google Play subscription without an account. */
+    public final By restorePurchaseButton = By.id(PKG + "btn_restore_purchase");
+    // Legacy sign-up screen (TvSignUpActivity). Still in the manifest, but nothing in the TV UI
+    // opens it any more — "Sign up" shows the pay wall instead. Kept only so tests can assert its
+    // absence; if a build brings the screen back, this is where to hang the flow again.
     public final By signUpQr = By.id(PKG + "iv_sign_up_qr");
     public final By signInInsteadButton = By.id(PKG + "btn_signIn_instead");
     // Main screen (post-login)
@@ -71,32 +77,34 @@ public class SignInPage extends BasePage {
         Assert.assertTrue(isDisplayed(signInCode), "Device code not displayed");
         Assert.assertFalse(textOf(signInCode).isBlank(), "Device code is empty");
         Assert.assertTrue(isDisplayed(signInLink), "Sign-in web link not displayed");
+        Assert.assertTrue(isDisplayed(restorePurchaseButton), "'Restore purchase' button not displayed");
         return this;
     }
 
-    @Step("Open the Sign up screen")
-    public SignInPage openSignUp() {
+    /** True while the app still shows the legacy sign-up QR screen (it should not). */
+    public boolean isLegacySignUpScreenShown() {
+        return isPresent(signUpQr) || isPresent(signInInsteadButton);
+    }
+
+    /**
+     * Opens the pay wall from the welcome screen. "Sign up" no longer leads to the TV sign-up QR
+     * screen — the build shows {@code TvPaywallActivity} instead (see {@link PayWallPage}).
+     */
+    @Step("Open the pay wall (Sign up)")
+    public PayWallPage openPayWall() {
         dpad.focusOnAndSelect(signUpButton);
-        fluentVisibility(signUpQr, Duration.ofSeconds(15));
-        return this;
+        return new PayWallPage(testContext).waitLoaded();
     }
 
-    @Step("Verify sign-up screen elements are displayed (QR, Sign In Instead)")
-    public SignInPage verifySignUpDisplayed() {
-        Assert.assertTrue(isDisplayed(signUpQr), "Sign-up QR not displayed");
-        Assert.assertTrue(isDisplayed(signInInsteadButton), "'Sign In Instead' button not displayed");
-        Assert.assertTrue(isDisplayed(backButton), "Back button not displayed");
-        return this;
+    /** Presses "Restore purchase" on the sign-in screen and waits for the resulting dialog. */
+    @Step("Tap 'Restore purchase'")
+    public RestorePurchasePage tapRestorePurchase() {
+        dpad.focusOnAndSelect(restorePurchaseButton);
+        return new RestorePurchasePage(testContext).waitDialog();
     }
 
-    /** Taps "Sign In Instead" on the sign-up screen and verifies the redirect to the sign-in screen. */
-    @Step("Tap 'Sign In Instead' → expect the Sign in screen")
-    public SignInPage tapSignInInstead() {
-        dpad.focusOnAndSelect(signInInsteadButton);
-        // Sign-in screen is confirmed by its unique device-code element.
-        fluentVisibility(signInCode, Duration.ofSeconds(15));
-        return this;
-    }
+    
+    
 
     /** Full login: open Sign in, read the device code, approve it via the account API, land on main. */
     @Step("Log in via device code (API approve)")

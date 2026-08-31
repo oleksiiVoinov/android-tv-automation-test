@@ -28,6 +28,7 @@ public class Navigator extends BasePage {
     private static final String WELCOME_SIG = PKG + "btn_sign_in";
     private static final String SIGN_IN_SIG = PKG + "tv_sign_in_code";
     private static final String SIGN_UP_SIG = PKG + "iv_sign_up_qr";
+    private static final String PAYWALL_SIG = PKG + "paywall_root";
     private static final String SERVER_LIST_SIG = PKG + "tv_title";
     private static final String RECONNECT_DIALOG_SIG = PKG + "action_cancel_btn";
     // Info sub-screens (Help/Privacy/Terms) all carry a "Go back"; the settings popup carries this item;
@@ -59,6 +60,9 @@ public class Navigator extends BasePage {
         // recognised before the welcome screen they were opened from.
         if (source.contains(RECONNECT_DIALOG_SIG)) {
             return Pages.RECONNECT_DIALOG;
+        }
+        if (source.contains(PAYWALL_SIG)) {
+            return Pages.PAYWALL;
         }
         if (source.contains(SIGN_UP_SIG)) {
             return Pages.SIGN_UP;
@@ -123,7 +127,7 @@ public class Navigator extends BasePage {
                 case WELCOME, SIGN_IN -> new SignInPage(testContext).ensureSignedIn(
                         RuntimeConfig.getRequired("tvEmail"),
                         RuntimeConfig.getRequired("tvPassword"));
-                case SIGN_UP -> dpad.back();               // back to welcome, then login next loop
+                case SIGN_UP, PAYWALL -> dpad.back();      // back to welcome, then login next loop
                 case RECONNECT_DIALOG -> dpad.focusOnAndSelect(org.openqa.selenium.By.id(RECONNECT_DIALOG_SIG));
                 case SERVER_LIST, INFO_SCREEN, DEBUG_MENU -> dpad.back();
                 case UNKNOWN, LOADING -> pause(Duration.ofSeconds(1));
@@ -147,7 +151,8 @@ public class Navigator extends BasePage {
                 case WELCOME -> {
                     return new SignInPage(testContext);
                 }
-                case SIGN_IN, SIGN_UP, SERVER_LIST, RECONNECT_DIALOG, INFO_SCREEN, DEBUG_MENU -> dpad.back();
+                case SIGN_IN, SIGN_UP, PAYWALL, SERVER_LIST, RECONNECT_DIALOG, INFO_SCREEN,
+                     DEBUG_MENU -> dpad.back();
                 case MAIN -> throw new IllegalStateException(
                         "Expected the welcome screen but the app is signed in (on main). "
                                 + "Clear app data before login/sign-up tests.");

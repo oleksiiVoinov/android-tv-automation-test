@@ -16,10 +16,10 @@ renamed to `apps.tv.api.testomatio`, so fixes port over one-to-one.
 
 ## 1. What was exported
 
-**24 test cases** — every `@Test` of the 11 classes listed in
+**28 test cases** — every `@Test` of the 12 classes listed in
 `src/test/java/apps/tv/regression/regression.xml`:
 
-- 19 plain cases,
+- 23 plain cases,
 - 5 per-protocol cases for the single data-driven method `ProtocolsTest#checkProtocol`.
 
 Not exported (on purpose): `apps/tv/api/WebAuthTryTest`, `apps/tv/temp/SampleTest` (not in the suite
@@ -28,25 +28,33 @@ XML) and `ServerListTest#selectServer` (commented out in the code).
 The tree mirrors the Allure **behaviors** report one to one — `@Feature` → folder, `@Story` → file
 suite, and a class without a `@Feature` gets its story promoted to feature level:
 
+Renumbered on 31.08.2026: `@Feature` `1..8`, `@Story` `01..12`, strictly in `regression.xml` order.
+Every class now carries a real `@Feature`, so nothing sits promoted at the root any more.
+
 ```
 Master
 └── 🤖 TV Regression (Auto and Manual)          1882fcfb
     ├── Manual                                  5198b93f   (manual checks, not synced)
     ├── 1. Installation                         78167878
-    │   └── 1. Reinstall app                    a48427cc   1 case
-    ├── 1. Sign up                              b500a3d4
-    │   └── 1. Sign up                          4fd0a8e6   2 cases
-    ├── 1. Login                                e4e4b333
-    │   └── 1. Login                            81f4b088   3 cases
-    ├── 4. Settings menu                        f71c3f9e
-    │   ├── Help & Support                      770df00f   1 case
-    │   ├── Privacy Notice                      1266bd0b   1 case
-    │   ├── Terms of Service                    5a2361ca   1 case
-    │   ├── Split Tunneling                     2ee6c102   3 cases
-    │   └── Sign Out                            d3a9c900   2 cases
-    ├── 2. Main screen  (file)                  c8c72d8c   2 cases   — MainScreenPageTest, no @Feature
-    ├── 3. Protocols    (file)                  d0f721e4   5 cases   — ProtocolsTest, no @Feature
-    └── 4. Server List  (file)                  f2480833   3 cases   — ServerListTest, no @Feature
+    │   └── 01. Reinstall app                   a48427cc   1 case
+    ├── 2. Sign up                              b500a3d4
+    │   └── 02. Sign up                         4fd0a8e6   2 cases
+    ├── 3. Login                                e4e4b333
+    │   └── 03. Login                           81f4b088   3 cases
+    ├── 4. Main screen                          a3673297
+    │   └── 04. Main screen                     c8c72d8c   2 cases
+    ├── 5. Protocols                            600cc48a
+    │   └── 05. Protocols                       d0f721e4   5 cases
+    ├── 6. Server List                          0331fdf5
+    │   └── 06. Server List                     f2480833   3 cases
+    ├── 7. Settings menu                        f71c3f9e
+    │   ├── 07. Help & Support                  770df00f   1 case
+    │   ├── 08. Privacy Notice                  1266bd0b   1 case
+    │   ├── 09. Terms of Service                5a2361ca   1 case
+    │   ├── 10. Split Tunneling                 2ee6c102   3 cases
+    │   └── 11. Sign Out                        d3a9c900   2 cases
+    └── 8. Pay wall                             4af22c80
+        └── 12. Pay wall                        4bf1ff7c   4 cases
 ```
 
 Every case carries, in English: a header line with `Class#method` and the severity, **Preconditions**
@@ -92,12 +100,12 @@ but are not in the grid, so they have no case; if a build starts exposing them t
   "tests": {
     "apps.tv.regression.SignOutTest#signOut/0": {
       "id": "87547ef0", "title": "…", "suite_id": "d3a9c900",
-      "suite_title": "Sign Out", "feature": "4. Settings menu"
+      "suite_title": "11. Sign Out", "feature": "7. Settings menu"
     }
   },
   "parametrized": {
     "apps.tv.regression.ProtocolsTest#checkProtocol/1": {
-      "V2Ray": { "id": "794350eb", "title": "…", "suite_id": "d0f721e4", "suite_title": "3. Protocols" }
+      "V2Ray": { "id": "794350eb", "title": "…", "suite_id": "d0f721e4", "suite_title": "05. Protocols" }
     }
   }
 }
@@ -157,7 +165,7 @@ Expected console lines:
 
 ```
 [testomatio] mapping loaded: 19 tests + 5 parametrized cases, project android-f0d8b
-[testomatio] run pre-filled from suites [1882fcfb]: 24 cases, manual checks included
+[testomatio] run pre-filled from suites [1882fcfb]: 28 cases, manual checks included
 [testomatio] run created: https://app.testomat.io/projects/android-f0d8b/runs/…
 ```
 
@@ -255,7 +263,7 @@ project too — point it at `regression.xml` and root suite `1882fcfb`.
 | `…/TestomatioReporter.java` | run lifecycle, sharing a run between JVMs, sending results |
 | `…/TestomatioRunCli.java` | CLI behind `testomatioCreateRun` / `testomatioFinishRun` |
 | `src/test/java/apps/listeners/TestomatioListener.java` | TestNG listener (`ISuiteListener` + `ITestListener`) |
-| `src/main/resources/testomatio-mapping.json` | `Class#method → test id` map (19 plain + 5 per-value) |
+| `src/main/resources/testomatio-mapping.json` | `Class#method → test id` map (23 plain + 5 per-value) |
 | `build.gradle` | `testomatio*` options, listener registration, two tasks, `org.json` dependency |
 
 The listener is registered for **all** Test tasks, but with `testomatio=false` it does nothing — not a

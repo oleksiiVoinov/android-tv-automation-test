@@ -67,7 +67,7 @@ public class ServerListPage extends BasePage {
 
     @Step("Verify server list screen is displayed")
     public ServerListPage verifyDisplayed() {
-        Assert.assertEquals(textOf(title), "Select Server Location", "Wrong server list title");
+        Assert.assertEquals(textOf(title), "Select server location", "Wrong server list title");
         Assert.assertTrue(isDisplayed(searchIcon), "Search icon not displayed");
         Assert.assertTrue(isDisplayed(sortContainer), "Sort control not displayed");
         Assert.assertTrue(isDisplayed(allServersTitle), "'ALL Servers' section not displayed");

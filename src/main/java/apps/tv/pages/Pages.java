@@ -6,6 +6,7 @@ public enum Pages {
     WELCOME,          // TvWelcomeActivity (Sign in / Sign up)
     SIGN_IN,          // TvSignInActivity (QR + device code)
     SIGN_UP,          // TvSignUpActivity (QR + "Sign In Instead")
+    PAYWALL,          // TvPaywallActivity ("Choose your Premium plan") — opened by Sign up
     SERVER_LIST,      // TvServerListActivity
     RECONNECT_DIALOG, // "Do you want to reconnect with the new protocol?"
     DEBUG_MENU,       // LoggerActivity (opened by holding Connect ~3s) — BACK returns to main

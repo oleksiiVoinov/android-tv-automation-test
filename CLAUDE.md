@@ -153,7 +153,10 @@ src/
 │   │           ├── Navigator.java          # screen detection + navigation  ← see below
 │   │           ├── Pages.java              # enum of detectable screens
 │   │           ├── MainScreenPage.java     # main: connect / status / location / protocol / gear
-│   │           ├── SignInPage.java         # welcome / sign-in / sign-up (+ API device-code login)
+│   │           ├── SignInPage.java         # welcome / sign-in (+ API device-code login, Restore purchase)
+│   │           ├── PayWallPage.java        # pay wall: 3 plans, badges/CTA/footer follow the focus
+│   │           ├── PlayBillingPage.java    # Google Play TV billing sheet (com.android.vending)
+│   │           ├── RestorePurchasePage.java # Restore purchase dialog (no subscription / restored)
 │   │           ├── ServerListPage.java     # server list: search / sort / select (clusters)
 │   │           ├── SettingsMenuPage.java   # settings popup (gear) — opens the info screens
 │   │           ├── HelpSupportPage.java    # Help & Support screen
@@ -172,7 +175,8 @@ src/
     ├── listeners/TestomatioListener.java   # reports every result into a Testomat.io run
     │                                       #   (registered in build.gradle, inert unless -Dtestomatio=true)
     └── tv/regression/
-        ├── LoginTest.java, SignUpTest.java         # start from a clean slate (own precondition)
+        ├── SignInTest.java, SignUpTest.java         # start from a clean slate (own precondition)
+        ├── PayWallTest.java                         # pay wall + Google Play purchase / restore chain
         ├── MainScreenPageTest.java, ProtocolsTest.java, ServerListTest.java
         ├── ReinstallTest.java                       # uninstall + install APK from apps/installation
         ├── HelpSupportTest.java, PrivacyNoticeTest.java, TermsOfServiceTest.java, SignOutTest.java
@@ -187,12 +191,14 @@ Navigation lives in `Navigator` + the `Pages` enum, **not** in blind BACK-loops.
 
 - `detectPage()` reads `getPageSource()` **once** and matches unique resource-ids → a `Pages`
   value. Order matters (a dialog overlays main; sub-screens before the screen they open from):
-  `RECONNECT_DIALOG (action_cancel_btn)` → `SIGN_UP (iv_sign_up_qr)` → `SIGN_IN (tv_sign_in_code)`
+  `RECONNECT_DIALOG (action_cancel_btn)` → **`PAYWALL (paywall_root)`** → `SIGN_UP (iv_sign_up_qr)`
+  → `SIGN_IN (tv_sign_in_code)`
   → `WELCOME (btn_sign_in)` → `SERVER_LIST (tv_title)` → `MAIN (tvConnectButton)`
   → `DEBUG_MENU (logs_recycler_view)` → `INFO_SCREEN (btn_go_back || tv_settings_help_support)` → `UNKNOWN`.
 - `detectCurrentPage(retry, poll)` polls, absorbing the loading/splash screen.
 - `toMainScreen()` / `toWelcome()` loop "detect → one corrective step": login on WELCOME/SIGN_IN,
-  cancel the reconnect dialog, BACK out of SERVER_LIST / SIGN_UP / **INFO_SCREEN** / **DEBUG_MENU**,
+  cancel the reconnect dialog, BACK out of SERVER_LIST / SIGN_UP / **PAYWALL** / **INFO_SCREEN** /
+  **DEBUG_MENU**,
   wait on UNKNOWN. The debug/logger screen (`LoggerActivity`) opens on a ~3s hold of Connect
   (`MainScreenPage.holdConnect`); BACK returns to main.
 - `MainScreenPage.navigateToMainScreen()` and `SignInPage.navigateToWelcome()` delegate to it.
@@ -211,8 +217,19 @@ clean screen (chain `.goBack()`).
    `Navigator` handles login/dialogs/sub-screens. Don't re-implement navigation in tests.
 4. Prefer `tv`-prefixed resource-ids — the TV build ships dedicated layouts.
 5. Create the test under `apps/tv/regression/` extending `BaseTest`; add Allure annotations
-   (`@Epic`, `@Feature`, `@Story`, `@Severity`, `@Description` with Objective + Steps).
-6. Register the class in `regression.xml`.
+   (`@Epic`, `@Feature`, `@Story`, `@Severity`, `@Description` with Objective + Steps) — **every**
+   `@Test` and `@BeforeClass` needs both `@Feature` and `@Story`.
+6. Register the class in `regression.xml` and **renumber**: Allure sorts tree nodes as strings, so
+   the numbers in `@Feature` / `@Story` are what keep the report in run order.
+   - `@Feature` = `N. Name`, numbered `1..8` in the order the classes appear in `regression.xml`;
+     classes that share a feature (currently only `7. Settings menu`) **must stay adjacent** there.
+   - `@Story` = `NN. Name`, **zero-padded**, sequential across the whole suite in the same order.
+   - Current map: `1. Installation`/`01. Reinstall app` · `2. Sign up`/`02.` · `3. Login`/`03.` ·
+     `4. Main screen`/`04.` · `5. Protocols`/`05.` · `6. Server List`/`06.` ·
+     `7. Settings menu`/`07. Help & Support`, `08. Privacy Notice`, `09. Terms of Service`,
+     `10. Split Tunneling`, `11. Sign Out` · `8. Pay wall`/`12.`.
+   - Inserting a class in the middle shifts every later number — and the Testomat.io suite titles
+     with it, so run the `testomatio-tv-sync` skill afterwards.
 7. Export the new test to Testomat.io and add it to `testomatio-mapping.json` — see
    *Testomat.io* below. Until that is done the run logs `[testomatio] not mapped: …`.
 8. **Update the relevant sections of this CLAUDE.md** (locators, structure, conventions).
@@ -223,7 +240,7 @@ Full contract: [`TESTOMATIO.md`](./TESTOMATIO.md). Short version:
 
 - project `android-f0d8b`, TV subtree root suite **`1882fcfb`** (🤖 `TV Regression (Auto and Manual)`, inside `Master`, next to the phone `Regression (Auto and Manual)`);
   manual TV checks live in `Manual` = `5198b93f` and are **never** touched by the sync;
-- **24 cases** = 19 plain + 5 per-protocol, mirroring the Allure behaviors tree of `regression.xml`;
+- **28 cases** = 23 plain + 5 per-protocol, mirroring the Allure behaviors tree of `regression.xml`;
 - `src/main/resources/testomatio-mapping.json` maps `<FQCN>#<method>/<paramCount>` → case id.
   **Never put Testomat.io ids into Java code**; the per-protocol rows are keyed by the *enum constant*
   (`OpenVPNTCP`), not the on-screen label;
@@ -268,6 +285,10 @@ Main screen (`TvMainActivity`):
 Settings popup (opened from the gear) and its info screens:
 - Menu items: `tv_settings_help_support`, `tv_settings_split_tunneling`,
   `tv_settings_privacy_notice`, `tv_settings_terms_service`, `tv_settings_sign_out`
+- The last item depends on who is using the app: a signed-in account gets
+  `tv_settings_sign_out` ("Sign Out"); a user who is premium only through a **restored Google Play
+  subscription** (no account) gets `tv_settings_sign_in` ("Sign In") instead, which opens
+  `TvSignInActivity`. `tv_settings_install_other_devices` exists in the layout but is always gone.
 - Help & Support (`TvHelpSupportActivity`): `tv_help_headline`, `tv_help_support_site`
   (`https://vpnsuper.com/support`), `iv_help_support_qr`, `btn_go_back`
 - Privacy Notice (`TvPrivacyNoticeActivity`): `tv_privacy_headline`, `tv_privacy_notice_site`
@@ -279,9 +300,35 @@ Settings popup (opened from the gear) and its info screens:
   (`sign_out_title` "You've been signed out", `sign_out_desc`, `btn_ok` "Okay") → welcome (signed out).
 
 Welcome / sign-in (`TvWelcomeActivity` / `TvSignInActivity` / `TvSignUpActivity`):
-- `tv_welcome_headline`, `btn_sign_in`, `btn_sign_up`
-- `tv_sign_in_code` (rotating device code), `tv_sign_in_link`, `iv_sign_in_qr`, `btn_back`
+- `tv_welcome_headline`, `btn_sign_in`, `btn_sign_up` — **`btn_sign_up` now opens the pay wall**,
+  not `TvSignUpActivity` (see Known Gotchas)
+- `tv_sign_in_code` (rotating device code), `tv_sign_in_headline`, `tv_sign_in_subtitle`
+  ("Trouble scanning? Go to"), `tv_sign_in_link`, `tv_sign_in_subtitle_line_2` ("and use this
+  code:"), `iv_sign_in_qr`, `iv_sign_in_genz`, `btn_back`, `btn_restore_purchase`
 - `iv_sign_up_qr`, `btn_signIn_instead`
+
+Pay wall (`TvPaywallActivity`) — opened from Welcome → **Sign up**:
+- `paywall_root`, `paywall_left` (headline "Choose your Premium plan" + six benefit tiles),
+  `paywall_right`, `tv_paywall_footer`, `paywall_progress_overlay` (spinner during billing)
+- `btn_paywall_back` ("Back")
+- plan cards `plan_weekly` / `plan_monthly` / `plan_yearly`, each an `include` of the same layout:
+  `card_root` (the focusable element), `plan_name`, `plan_price`, `plan_suffix` (`/wk` `/mo` `/yr`).
+  **Those four ids exist three times** — always scope by the card container.
+- `plan_badge` ("Lowest Price" / "Most Popular" / "Best Value") and `plan_cta` ("Purchase") are
+  rendered **only on the focused card**; `tv_paywall_footer` switches between the weekly / monthly /
+  yearly wording with the focus.
+
+Google Play TV billing sheet (`com.android.vending`, `TvUiBuilderHostActivity`):
+- all resource-ids are stripped (`0_resource_name_obfuscated`) → address by **text**. The
+  "Subscribe" label is a TextView; the focusable element is its clickable parent.
+- test-mode markers asserted by `PlayBillingPage`: "This is a test subscription…" and the payment
+  method "Test card, always approves".
+
+Restore purchase dialog (`dialog_generic_confirmation_layout_tv`, raised from the sign-in screen):
+- `dialog_root_view`, `tv_dialog_title`, `tv_dialog_sub_title`, `action_positive_btn` ("Okay")
+- no subscription → "No subscription found" / "You do not have any subscription to restore";
+  Okay keeps the user on the sign-in screen
+- active subscription → "Subscription Restored"; Okay opens the main screen (premium, no account)
 
 Server list (`TvServerListActivity`):
 - `tv_title` ("Select Server Location"), `tv_sort_option`, `tv_section_title`, `tv_name`,
@@ -318,6 +365,23 @@ still overrides). The premium test account must exist in the selected env.
   UiAutomator2/box hiccup on driver startup (box memory is tight). Re-running the class clears it; not a test-logic bug.
 - **`uiautomator dump` is flaky on the box** (sometimes "Killed") — rebooting the box helps.
 - **SauceLabs** — real-device cloud has no Android TV; TV tests run on physical boxes only.
+- **Welcome → "Sign up" opens the pay wall**, not `TvSignUpActivity`. Account creation is no longer
+  offered on TV: the sign-up QR screen has no entry point left anywhere in the UI (not from welcome,
+  not from sign-in, not from the settings menu) — the app tells users to create an account in the
+  mobile app. `SignInPage.openPayWall()` is the current path; the dead `openSignUp()` /
+  `verifySignUpDisplayed()` / `tapSignInInstead()` are gone, only the `signUpQr` /
+  `signInInsteadButton` locators remain so `SignInPage.isLegacySignUpScreenShown()` can assert the
+  old screen stays away. `SignUpTest` was rewritten around this.
+- **Purchases are licence-test purchases.** The Google account on the box is a Play licence tester:
+  the billing sheet says "This is a test subscription … You will not be charged" and the payment
+  method is "Test card, always approves". `PlayBillingPage.verifySheet` asserts both, so a box
+  signed in with a real account fails the test instead of buying something.
+- **A test subscription expires by itself** — a weekly plan renews every ~5 minutes and is cancelled
+  after ~30 minutes, so nothing cleans it up. Re-running the suite inside that window finds a live
+  subscription, so `PayWallTest#restorePurchaseWithoutSubscription` **skips** itself (with a clear
+  message) instead of failing. Buying the same plan twice in that window is not supported by Play.
+- **Clearing app data does not remove the subscription** — it lives on the Google account, which is
+  exactly what makes the restore test possible after a wipe.
 
 ## Egress verification (per-app and shell)
 

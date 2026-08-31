@@ -15,11 +15,11 @@ import org.testng.annotations.Test;
  * Validates the redirect: headline, terms-of-service URL, QR and the Go back control.
  */
 @Epic("Android TV")
-@Feature("4. Settings menu")
+@Feature("7. Settings menu")
 public class TermsOfServiceTest extends BaseTest {
 
     @Test(priority = 1, description = "Terms of Service menu item opens the Terms of Service screen")
-    @Story("Terms of Service")
+    @Story("09. Terms of Service")
     @Severity(SeverityLevel.NORMAL)
     @Description("""
             Objective: verify the 'Terms of Service' menu item redirects to the Terms of Service screen

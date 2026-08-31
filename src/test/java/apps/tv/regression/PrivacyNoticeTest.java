@@ -15,11 +15,11 @@ import org.testng.annotations.Test;
  * Validates the redirect: headline, privacy-notice URL, QR and the Go back control.
  */
 @Epic("Android TV")
-@Feature("4. Settings menu")
+@Feature("7. Settings menu")
 public class PrivacyNoticeTest extends BaseTest {
 
     @Test(priority = 1, description = "Privacy Notice menu item opens the Privacy Notice screen")
-    @Story("Privacy Notice")
+    @Story("08. Privacy Notice")
     @Severity(SeverityLevel.NORMAL)
     @Description("""
             Objective: verify the 'Privacy Notice' menu item redirects to the Privacy Notice screen

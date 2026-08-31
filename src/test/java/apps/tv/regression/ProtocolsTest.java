@@ -13,11 +13,12 @@ import org.testng.annotations.Test;
 import java.util.List;
 
 @Epic("Android TV")
+@Feature("5. Protocols")
 public class ProtocolsTest extends BaseTest {
     private ServerV7 server;
     private List<Protocols> protocolList;
 
-    @Story("3. Protocols")
+    @Story("05. Protocols")
     @BeforeClass()
     public void precondition() throws Exception {
         protocolList = new MainScreenPage(testContext)
@@ -41,7 +42,7 @@ public class ProtocolsTest extends BaseTest {
     }
 
     @Test(priority = 1, dataProvider = "protocols", description = "connect on each protocol")
-    @Story("3. Protocols")
+    @Story("05. Protocols")
     @Severity(SeverityLevel.BLOCKER)
     @Description("""
             Objective: verify the VPN connects on each protocol while keeping the selected server's country

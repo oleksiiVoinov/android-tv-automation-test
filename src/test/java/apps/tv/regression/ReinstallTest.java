@@ -27,7 +27,7 @@ public class ReinstallTest {
     private static final String APK_DIR = "src/main/java/apps/installation";
 
     @Test(priority = 1, description = "reinstall the TV app from the local APK")
-    @Story("1. Reinstall app")
+    @Story("01. Reinstall app")
     @Severity(SeverityLevel.BLOCKER)
     @Description("""
             Objective: reinstall the app via adb from the local APK

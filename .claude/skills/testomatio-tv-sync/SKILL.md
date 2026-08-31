@@ -90,8 +90,10 @@ The Testomat.io tree must stay identical to the Allure `behaviors` tree of the T
 
 - `@Feature` → **folder** suite, `@Story` → **file** suite, cases live inside the file suite;
 - **no `@Feature`, only `@Story`** → Allure promotes the story to feature level, so in Testomat.io it
-  is a **file suite directly under the TV root** `1882fcfb`. Existing ones: `2. Main screen`
-  (`c8c72d8c`), `3. Protocols` (`d0f721e4`), `4. Server List` (`f2480833`);
+  is a **file suite directly under the TV root** `1882fcfb`. **None right now** — since 31.08.2026
+  every regression class carries a real `@Feature`, so `STORY_AS_FEATURE` in the diff script is only
+  a historical hint and must never override the code (`MainScreenPageTest`, `ProtocolsTest` and
+  `ServerListTest` used to be promoted and were converted into folder + file suites);
 - **no `@Story`** → Allure puts the test straight under the feature, which Testomat.io cannot express.
   Fix it in the code: add a `@Story`. Ask the user before editing test files, then keep the suite name
   identical to the new `@Story` value;
@@ -107,21 +109,28 @@ The Testomat.io tree must stay identical to the Allure `behaviors` tree of the T
 
 ### Current tree (ids)
 
+Renumbered 31.08.2026 — `@Feature` `1..8` and `@Story` `01..12` strictly in `regression.xml`
+order (see CLAUDE.md → *Adding New TV Tests*). Every class now carries a real `@Feature`, so
+nothing is promoted to the root any more.
+
 ```
 🤖 TV Regression (Auto and Manual)  1882fcfb
 ├── Manual                          5198b93f   ← QA's, never touch
-├── 1. Installation                 78167878 → 1. Reinstall app  a48427cc
-├── 1. Sign up                      b500a3d4 → 1. Sign up        4fd0a8e6
-├── 1. Login                        e4e4b333 → 1. Login          81f4b088
-├── 4. Settings menu                f71c3f9e → Help & Support     770df00f
-│                                              Privacy Notice     1266bd0b
-│                                              Terms of Service   5a2361ca
-│                                              Split Tunneling    2ee6c102
-│                                              Sign Out           d3a9c900
-├── 2. Main screen  (file)          c8c72d8c
-├── 3. Protocols    (file)          d0f721e4
-└── 4. Server List  (file)          f2480833
+├── 1. Installation                 78167878 → 01. Reinstall app     a48427cc  (1)
+├── 2. Sign up                      b500a3d4 → 02. Sign up           4fd0a8e6  (2)
+├── 3. Login                        e4e4b333 → 03. Login             81f4b088  (3)
+├── 4. Main screen                  a3673297 → 04. Main screen       c8c72d8c  (2)
+├── 5. Protocols                    600cc48a → 05. Protocols         d0f721e4  (5)
+├── 6. Server List                  0331fdf5 → 06. Server List       f2480833  (3)
+├── 7. Settings menu                f71c3f9e → 07. Help & Support    770df00f  (1)
+│                                              08. Privacy Notice    1266bd0b  (1)
+│                                              09. Terms of Service  5a2361ca  (1)
+│                                              10. Split Tunneling   2ee6c102  (3)
+│                                              11. Sign Out          d3a9c900  (2)
+└── 8. Pay wall                     4af22c80 → 12. Pay wall          4bf1ff7c  (4)
 ```
+
+**28 cases** = 23 plain + 5 per-protocol.
 
 ---
 
@@ -282,7 +291,9 @@ protocol method runs once per protocol the build exposes).
 - Reporting uses `create: false`, so a run can never create cases by itself — an unmapped test is
   reported by title and shows up as `[testomatio] not mapped: …`. That is the signal to run this skill.
 - Do not change `@Feature` / `@Story` values just to make the tree prettier — they drive the Allure
-  report the team reads. (The TV numbering is odd — three features start with "1." — leave it.)
+  report the team reads. The number is not decoration: it is the class's position in
+  `regression.xml`, so moving a class in the XML means renumbering everything after it and renaming
+  the matching suites here (`suites_update`, never delete-and-recreate — that would drop the history).
 - Ask before: deleting cases, editing test sources, renaming existing suites.
 - Never write into `fd90d89e` (the phone subtree) or into `5198b93f` (`Manual`).
 - After a sync, tell the user the counts (created / moved / retired) and the link to the root suite:

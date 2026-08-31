@@ -278,7 +278,11 @@ def collect_code_tests():
             feature = m["feature"] or class_level["feature"]
             story = m["story"] or class_level["story"]
             # Allure promotes @Story to Feature level when @Feature is absent
-            if e["fqcn"] in STORY_AS_FEATURE or (feature is None and story):
+            # Allure promotes @Story to Feature level only when the code really has no @Feature.
+            # STORY_AS_FEATURE is a hint about which classes that is - never an override: those
+            # classes may later get a real @Feature (the general/* ones did), and forcing the
+            # promotion then invents a feature the code does not have -> a run of false MOVED.
+            if feature is None and story:
                 feature, story = story, story
             tests.append({**e, **m, "feature": feature, "story": story,
                           "key": f'{e["fqcn"]}#{m["method"]}/{m["params"]}'})

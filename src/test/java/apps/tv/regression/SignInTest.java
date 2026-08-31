@@ -19,7 +19,7 @@ import org.testng.annotations.Test;
  * The last test performs the actual login and lands on the main screen.
  */
 @Epic("Android TV")
-@Feature("1. Login")
+@Feature("3. Login")
 public class SignInTest extends BaseTest {
 
     // Runs after BaseTest.tearUp (@BeforeClass: superclass before subclass) — driver is ready here.
@@ -33,7 +33,7 @@ public class SignInTest extends BaseTest {
     }
 
     @Test(priority = 1, description = "validate welcome screen elements")
-    @Story("1. Login")
+    @Story("03. Login")
     @Severity(SeverityLevel.BLOCKER)
     @Description("""
             Objective: verify the welcome screen shows headline, Sign in and Sign up
@@ -48,7 +48,7 @@ public class SignInTest extends BaseTest {
     }
 
     @Test(priority = 2, description = "validate sign-in screen elements")
-    @Story("1. Login")
+    @Story("03. Login")
     @Severity(SeverityLevel.BLOCKER)
     @Description("""
             Objective: verify the sign-in screen shows the QR, device code and web link
@@ -65,7 +65,7 @@ public class SignInTest extends BaseTest {
     }
 
     @Test(priority = 3, description = "log in to the app via device code")
-    @Story("1. Login")
+    @Story("03. Login")
     @Severity(SeverityLevel.BLOCKER)
     @Description("""
             Objective: log in to the app and reach the main screen
