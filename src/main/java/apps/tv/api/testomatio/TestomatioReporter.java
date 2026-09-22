@@ -1,5 +1,6 @@
 package apps.tv.api.testomatio;
 
+import apps.tv.api.SlackNotifier;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -29,6 +30,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Any API failure is logged and ignored: reporting must never fail a test run.
  */
 public final class TestomatioReporter {
+
+    /** Shown in the Slack message so the TV and the phone suite are told apart. */
+    private static final String PROJECT_LABEL = "Android TV";
 
     private static final AtomicBoolean INITIALIZED = new AtomicBoolean(false);
 
@@ -165,6 +169,35 @@ public final class TestomatioReporter {
      * the v2 API is not available — reporting is more important than a complete Run.
      */
     static JSONObject createRun(TestomatioClient client, String title) {
+        JSONObject run = createRunInternal(client, title);
+        if (run != null) {
+            notifySlack(client, run, title);
+        }
+        return run;
+    }
+
+    /**
+     * Posts the link to a freshly created Run into Slack. Called from {@link #createRun} only, i.e. from
+     * the one process that created the Run — a suite that joins an existing Run ({@code -DtestomatioRunId})
+     * stays quiet, so one run gives exactly one message.
+     */
+    private static void notifySlack(TestomatioClient client, JSONObject run, String title) {
+        if (!TestomatioConfig.slackNotify()) {
+            return;
+        }
+        String uid = run.optString("uid", null);
+        if (uid == null || uid.isBlank()) {
+            return;
+        }
+        String url = run.optString("url", client.runUrl(TestomatioMapping.projectId(), uid));
+        String runTitle = title == null || title.isBlank() ? uid : title;
+        String message = "\uD83E\uDDEA *Testomat.io run created* \u00B7 " + PROJECT_LABEL
+                + "\n*" + runTitle + "*\n" + url;
+        boolean sent = new SlackNotifier(TestomatioConfig.slackWebhook()).sendToSlack(message);
+        log(sent ? "run link posted to Slack" : "could not post the run link to Slack (see the log above)");
+    }
+
+    private static JSONObject createRunInternal(TestomatioClient client, String title) {
         java.util.List<String> suites = TestomatioConfig.runSuiteIds(TestomatioMapping.rootSuite());
         if (!suites.isEmpty()) {
             JSONObject run = client.createRunWithSuites(TestomatioMapping.projectId(), title,

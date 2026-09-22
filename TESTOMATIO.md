@@ -196,6 +196,8 @@ RUN_ID=$(./gradlew -q testomatioCreateRun -DtestomatioRunTitle="Android TV regre
 | `testomatioFinishRun` | `TESTOMATIO_FINISH_RUN` | `false` | **false → the run stays open**, a human closes it |
 | `testomatioRunFile` | `TESTOMATIO_RUN_FILE` | — | file used to share one run between JVMs |
 | `testomatioBaseUrl` | `TESTOMATIO_URL` | `https://app.testomat.io` | instance URL |
+| `testomatioSlack` | `TESTOMATIO_SLACK` | `true` | post the link to a **newly created** run into Slack |
+| `testomatioSlackWebhook` | `TESTOMATIO_SLACK_WEBHOOK` | — (local.properties) | incoming webhook = the channel the run link goes to; a secret, never committed |
 
 Every option is resolved the same way as the rest of the framework — `-Dkey=value` → gradle properties
 → env → **`local.properties`** → the default in `build.gradle`. So any row of this table can be pinned
@@ -204,6 +206,30 @@ Testomat.io block pre-commented.
 
 Where to get the key: Testomat.io → project → **Settings → Project → Project Reporting API key**.
 Keep it in git-ignored `local.properties` (`testomatioApiKey=tstmt_…`) or in the environment.
+
+---
+
+### The run link goes to Slack
+
+When a run is **created** with reporting on, `TestomatioReporter` posts one message through
+`apps.tv.api.SlackNotifier`:
+
+```
+🧪 *Testomat.io run created* · Android TV
+*TV Regression — 07.09.2026 14:30*
+https://app.testomat.io/projects/android-f0d8b/runs/<uid>/report
+```
+
+- it fires from `TestomatioReporter.createRun()` — the process that creates the run. A suite started
+  with `-DtestomatioRunId=<uid>` joins an existing run and stays quiet, so one run = one message;
+- the **channel is the webhook**: the **#android-qa** hook lives in the git-ignored `local.properties` as `testomatioSlackWebhook=…` (no default in the code — a webhook url is a secret)
+  (the same one the phone project's Jenkins post-build script posts `✅ Regression #N` with), so TV runs
+  land in the same channel. Set `testomatioSlackWebhook=…` in `local.properties` to post elsewhere;
+- `-DtestomatioSlack=false` skips the message;
+- a failed webhook call is logged and never fails the run.
+
+`SlackNotifier` is a twin of the phone project's `apps.multiplatform.api.SlackNotifier` — fix a bug in
+both.
 
 ---
 

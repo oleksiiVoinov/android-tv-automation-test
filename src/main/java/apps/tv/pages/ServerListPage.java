@@ -165,6 +165,7 @@ public class ServerListPage extends BasePage {
                     return;
                 } else {
                     dpad.down();
+                    pause(Duration.ofSeconds(1));
                 }
             }
         }

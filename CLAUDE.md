@@ -248,8 +248,15 @@ Full contract: [`TESTOMATIO.md`](./TESTOMATIO.md). Short version:
   whole TV subtree, and it is **not** closed automatically — a human finishes it after the
   review. The automated half must be closed by `./gradlew testomatioFinishRun -DtestomatioRunId=…`,
   otherwise the run hangs in "automated part not finished";
+- when a run is **created**, the link to it is posted into Slack by `apps/tv/api/SlackNotifier.java`
+  (`🧪 Testomat.io run created · Android TV` + title + url). The channel is decided by the incoming
+  webhook: there is **no default in the code** (a webhook url is a secret — GitHub push protection
+  rejects a commit containing one), so `testomatioSlackWebhook=…` must be set in the git-ignored
+  `local.properties`; it holds the **#android-qa** hook. Falls back to the generic `slackWebhook`;
+  with neither set nothing is posted and the reason is logged. `-DtestomatioSlack=false` skips it; a run joined via `-DtestomatioRunId`
+  never notifies, so one run = one message;
 - the code is a copy of the phone project's `apps/multiplatform/api/testomatio` with the package
-  renamed — fix a bug in one place, port it to the other.
+  renamed — fix a bug in one place, port it to the other. Same for `SlackNotifier`.
 
 ### Keeping Testomat.io in sync — the `testomatio-tv-sync` skill
 

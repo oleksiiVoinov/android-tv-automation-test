@@ -59,6 +59,24 @@ public final class TestomatioConfig {
      * Optional path to a file used to share one Run between several JVMs
      * (e.g. {@code regressionDevice1Test} + {@code regressionDevice2Test}).
      */
+    /**
+     * Post the link to a freshly created Run into Slack ({@code true} by default). The channel is
+     * decided by the webhook — see {@link apps.tv.api.SlackNotifier#WEBHOOK}, which must be set in
+     * {@code local.properties} for the message to go out.
+     */
+    public static final String SLACK = "testomatioSlack";
+    /**
+     * Slack incoming webhook the run link is posted to — the webhook is what decides the channel.
+     *
+     * <p><b>No default, and never hardcoded</b> — a webhook url is a secret (GitHub push protection
+     * rejects a commit containing one). Put the <b>#android-qa</b> hook (the same one the phone
+     * project's Jenkins post-build script uses for its {@code ✅ Regression #N} messages) into the
+     * git-ignored {@code local.properties} as {@code testomatioSlackWebhook=…}, or pass it with
+     * {@code -DtestomatioSlackWebhook=…} / {@code TESTOMATIO_SLACK_WEBHOOK}. Falls back to the
+     * generic {@link apps.tv.api.SlackNotifier#WEBHOOK} ({@code slackWebhook}) property; when
+     * neither is set nothing is posted and the reason is logged.
+     */
+    public static final String SLACK_WEBHOOK = "testomatioSlackWebhook";
     public static final String RUN_FILE = "testomatioRunFile";
     /** How long a Run stored in {@link #RUN_FILE} may be reused, minutes. */
     public static final String RUN_FILE_TTL = "testomatioRunFileTtlMinutes";
@@ -125,6 +143,23 @@ public final class TestomatioConfig {
 
     public static boolean finishRun() {
         return RuntimeConfig.getBoolean(FINISH_RUN, false);
+    }
+
+    /** @return whether the link to a newly created Run is posted into Slack */
+    public static boolean slackNotify() {
+        return RuntimeConfig.getBoolean(SLACK, true);
+    }
+
+    /**
+     * @return incoming webhook (i.e. the channel) the run link goes to, or {@code null} when it is
+     *         configured nowhere — {@code testomatioSlackWebhook} first, then the generic
+     *         {@code slackWebhook}. Keep it in the git-ignored {@code local.properties}.
+     */
+    public static String slackWebhook() {
+        String hook = RuntimeConfig.getOptional(SLACK_WEBHOOK);
+        return (hook == null || hook.isBlank())
+                ? RuntimeConfig.getOptional(apps.tv.api.SlackNotifier.WEBHOOK)
+                : hook;
     }
 
     public static String runFile() {

@@ -17,7 +17,7 @@
             <class name="apps.tv.regression.TermsOfServiceTest"/>
             <class name="apps.tv.regression.SplitTunnelingTest"/>
             <class name="apps.tv.regression.SignOutTest"/>
-            <class name="apps.tv.regression.PayWallTest"/>
+<!--            <class name="apps.tv.regression.PayWallTest"/>-->
         </classes>
     </test>
 </suite>

@@ -38,6 +38,7 @@ import org.testng.annotations.Test;
  */
 @Epic("Android TV")
 @Feature("8. Pay wall")
+//https://superunlimited.atlassian.net/browse/AB-3629
 public class PayWallTest extends BaseTest {
 
     /** Runs after BaseTest.tearUp (@BeforeClass: superclass first) — the driver is ready here. */

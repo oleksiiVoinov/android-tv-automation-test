@@ -37,3 +37,11 @@ testomatioRunTitle=
 
 # Project Reporting API key (Settings -> Project). Never commit a real key.
 testomatioApiKey=
+
+# ---- Slack notification of the Testomat.io run ----
+# When a run is created (testomatio=true), the link to it is posted into Slack.
+# Channel = the incoming webhook. There is NO default in the code (a webhook url is a secret and
+# must never be committed) - set it here, otherwise nothing is posted.
+testomatioSlackWebhook=
+# false -> do not post the link for this run
+testomatioSlack=true
