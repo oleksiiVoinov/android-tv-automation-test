@@ -42,7 +42,7 @@ import org.testng.annotations.Test;
 public class PayWallTest extends BaseTest {
 
     /** Runs after BaseTest.tearUp (@BeforeClass: superclass first) — the driver is ready here. */
-    @Story("12. Pay wall")
+    @Story("13. Pay wall")
     @BeforeClass
     public void resetToWelcome() {
         freshStart();
@@ -57,7 +57,7 @@ public class PayWallTest extends BaseTest {
     }
 
     @Test(priority = 1, description = "validate the pay wall elements and the three plans")
-    @Story("12. Pay wall")
+    @Story("13. Pay wall")
     @Severity(SeverityLevel.BLOCKER)
     @Description("""
             Objective: verify the pay wall shows the headline, the six benefits, the Back button
@@ -84,7 +84,7 @@ public class PayWallTest extends BaseTest {
     }
 
     @Test(priority = 2, description = "Restore purchase without a subscription shows the 'no subscription' dialog")
-    @Story("12. Pay wall")
+    @Story("13. Pay wall")
     @Severity(SeverityLevel.CRITICAL)
     @Description("""
             Objective: verify that Restore purchase on an account without a Google Play
@@ -122,7 +122,7 @@ public class PayWallTest extends BaseTest {
     }
 
     @Test(priority = 3, description = "buy the Weekly plan through Google Play")
-    @Story("12. Pay wall")
+    @Story("13. Pay wall")
     @Severity(SeverityLevel.BLOCKER)
     @Description("""
             Objective: verify a Weekly subscription can be purchased from the pay wall and that the
@@ -148,7 +148,7 @@ public class PayWallTest extends BaseTest {
     }
 
     @Test(priority = 4, description = "Restore purchase with an active subscription opens the main screen")
-    @Story("12. Pay wall")
+    @Story("13. Pay wall")
     @Severity(SeverityLevel.CRITICAL)
     @Description("""
             Objective: verify that Restore purchase brings back the subscription bought in the

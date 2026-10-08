@@ -11,6 +11,7 @@ import org.openqa.selenium.WebElement;
 import org.testng.Assert;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -20,12 +21,27 @@ import java.util.stream.Collectors;
  * Server list screen (TvServerListActivity): title, search, sort, and the scrollable server list.
  * Locators verified on device. Interaction is D-pad driven; selecting a server connects and
  * redirects back to the main screen.
+ *
+ * <p>The list has three sections, top to bottom (verified on device):
+ * <ol>
+ *   <li>"Fastest server" — one row, labelled with the <b>country</b> (e.g. "Germany");</li>
+ *   <li>"Recently used" — up to 3 leaf servers by alias ("Japan - 1"), most recent first, no
+ *       duplicates; absent on a fresh install. Selecting one connects <b>immediately</b>
+ *       (no cluster popup, no reconnect dialog);</li>
+ *   <li>"ALL Servers" — country clusters; selecting one opens the popup with its servers.</li>
+ * </ol>
+ * The same text can therefore appear in several sections ("Germany" as fastest and as a cluster),
+ * so {@link #selectServer} only accepts rows below the "ALL Servers" header, and the recent
+ * section has its own {@link #selectRecentServer}.
  */
 public class ServerListPage extends BasePage {
 
     private static final String PKG = "com.free.vpn.super.hotspot.open:id/";
     private static final int MAX_LIST_STEPS = 150;   // scrolling the full server list (long)
     private static final int MAX_SEARCH_STEPS = 20;  // navigating the few filtered search results
+
+    public static final String FASTEST_SERVER = "Fastest server";
+    public static final String RECENTLY_USED = "Recently used";
 
     // Header
     public final By title = By.id(PKG + "tv_title");                    // "Select Server Location"
@@ -34,7 +50,18 @@ public class ServerListPage extends BasePage {
     public final By sortOption = By.id(PKG + "tv_sort_option");         // current sort label
     // List
     public final By serverList = By.id(PKG + "lv_server_list");
-    public final By allServersTitle = By.id(PKG + "tv_all_server_title");
+    public final By allServersTitle = By.id(PKG + "tv_all_server_title");   // "ALL Servers" header
+    public final By sectionTitle = By.id(PKG + "tv_section_title");         // "Fastest server" / "Recently used"
+    private final By fastestServerTitle = AppiumBy.androidUIAutomator(
+            "new UiSelector().resourceId(\"" + PKG + "tv_section_title\").text(\"" + FASTEST_SERVER + "\")");
+    // Something inside the list holds the focus (UP from the top row moves it out to the toolbar).
+    private final By focusInList = AppiumBy.androidUIAutomator(
+            "new UiSelector().resourceId(\"" + PKG + "lv_server_list\").childSelector(new UiSelector().focused(true))");
+    private final By recentlyUsedTitle = AppiumBy.androidUIAutomator(
+            "new UiSelector().resourceId(\"" + PKG + "tv_section_title\").text(\"" + RECENTLY_USED + "\")");
+    // Headers + row names of the whole list, in document (= on-screen) order — used to read the sections.
+    private final By listRowsAndHeaders = By.xpath("//*[@resource-id='" + PKG + "tv_section_title' or @resource-id='"
+            + PKG + "tv_name' or @resource-id='" + PKG + "tv_all_server_title']");
     public final By serverName = By.id(PKG + "tv_name");               // row name in the main list
     // Search
     public final By searchField = By.id(PKG + "et_server_search");
@@ -99,9 +126,9 @@ public class ServerListPage extends BasePage {
     }
 
     /**
-     * Selects a single row by its visible text (flat list — no cluster to open).
+     * Selects a single row of "ALL Servers" by its visible text (flat list — no cluster to open).
      */
-    @Step("Select row {name} from the list")
+    @Step("Select row {name} from ALL Servers")
     public MainScreenPage selectServer(String name) {
         selectCluster(name);
         dpad.center();
@@ -116,15 +143,15 @@ public class ServerListPage extends BasePage {
      * a RecyclerView keeps the highlight at a fixed screen position and scrolls content underneath,
      * so bounds stay constant while we're actually advancing.
      */
-    @Step("Select cluster {server}")
+    @Step("Select cluster {text} in ALL Servers")
     private void selectCluster(String text) {
         System.out.println("🔎 scrollToRow: seeking '" + text + "'");
+        skipToAllServers();   // only "ALL Servers" rows may match (see class doc)
         By exact = AppiumBy.androidUIAutomator("new UiSelector().text(\"" + text + "\")");
         Set<String> seenWindows = new HashSet<>();
         for (int step = 0; step < MAX_LIST_STEPS; step++) {
             String focused = focusedRowText();
             if (text.equals(focused)) {
-                //System.out.println("✅ scrollToRow: found '" + text + "' at step " + step);
                 return;
             }
             boolean visibleSomewhere = !appiumDriver.findElements(exact).isEmpty();
@@ -143,7 +170,7 @@ public class ServerListPage extends BasePage {
         if (text.equals(focusedRowText())) {
             return;
         }
-        throw new NoSuchElementException("Could not find server '" + text + "' in the server list");
+        throw new NoSuchElementException("Could not find server '" + text + "' in the 'ALL Servers' list");
     }
 
     @Step("Select server {server}")
@@ -207,6 +234,133 @@ public class ServerListPage extends BasePage {
                 "new UiSelector().focused(true).childSelector(new UiSelector().className(\"android.widget.TextView\"))");
         var elements = appiumDriver.findElements(loc);
         return elements.isEmpty() ? null : elements.get(0).getText().trim();
+    }
+
+    // ---- Sections: Recently used ----
+
+    /**
+     * Names in the "Recently used" section, top (most recent) first; empty on a fresh install.
+     * Scrolls the list to the top first — the section titles must be on screen to tell the sections apart.
+     */
+    public List<String> recentServers() {
+        focusTopOfList();   // section titles are only on screen while the list is scrolled to the top
+        return readRecentOnScreen();
+    }
+
+    /** Parses the "Recently used" names from what is on screen — valid only with the list at the top. */
+    private List<String> readRecentOnScreen() {
+        List<String> recent = new ArrayList<>();
+        boolean inRecent = false;
+        for (WebElement e : appiumDriver.findElements(listRowsAndHeaders)) {
+            String id = e.getAttribute("resource-id");
+            String text = e.getText().trim();
+            if (id.endsWith("tv_all_server_title")) {
+                break;
+            }
+            if (id.endsWith("tv_section_title")) {
+                inRecent = RECENTLY_USED.equals(text);
+            } else if (inRecent) {
+                recent.add(text);
+            }
+        }
+        return recent;
+    }
+
+    /** Asserts the "Recently used" section starts with {@code expectedTop}, in this order. */
+    @Step("Verify Recently used starts with {expectedTop}")
+    public ServerListPage verifyRecentlyUsed(String... expectedTop) {
+        List<String> recent = recentServers();
+        attachScreenToReport("Recently used");
+        Assert.assertTrue(recent.size() >= expectedTop.length,
+                "Recently used has " + recent + ", expected it to start with " + List.of(expectedTop));
+        Assert.assertEquals(recent.subList(0, expectedTop.length), List.of(expectedTop),
+                "Wrong Recently used order (most recent must be first)");
+        return this;
+    }
+
+    /** Selects a server from "Recently used" — connects right away and returns to main. */
+    public MainScreenPage selectRecentServer(ServerV7 server) {
+        return selectRecentServer(server.getAliasName());
+    }
+
+    /**
+     * Moves the focus down through the top sections until the "Recently used" row named {@code name}
+     * is focused, then activates it. Never touches "Fastest server" or "ALL Servers" rows with the
+     * same label. Selecting connects immediately and redirects to the main screen.
+     */
+    @Step("Select {name} from Recently used")
+    public MainScreenPage selectRecentServer(String name) {
+        List<String> recent = recentServers();   // also leaves the focus on the "Fastest server" row
+        int index = recent.indexOf(name);
+        if (index < 0) {
+            throw new NoSuchElementException("'" + name + "' is not in Recently used: " + recent);
+        }
+        // Count rows instead of looking at section titles: one DOWN already scrolls the focused row
+        // to the top of the viewport, and the titles go off screen (verified on device).
+        for (int i = 0; i <= index; i++) {
+            dpad.down();   // Fastest server → recent[0] → recent[1] ...
+        }
+        String focused = focusedRowText();
+        Assert.assertEquals(focused, name, "Focus did not land on the Recently used row " + name);
+        dpad.center();
+        return waitForMainScreen();
+    }
+
+    /**
+     * Moves the focus onto the first "ALL Servers" cluster: from the top, skip the single
+     * "Fastest server" row and every "Recently used" row.
+     */
+    private void skipToAllServers() {
+        int topRows = 1 + recentServers().size();
+        for (int i = 0; i < topRows; i++) {
+            dpad.down();
+        }
+    }
+
+    /**
+     * Brings the focus to the first row of the list ("Fastest server"), so the section titles are on
+     * screen. Needed because the list opens with the focus on the currently selected server — after a
+     * disconnect that is its cluster deep inside ALL Servers, with no section title visible.
+     * UP from the top row leaves the list (toolbar) — then one DOWN brings it back onto that row.
+     */
+    @Step("Focus the top of the server list")
+    public ServerListPage focusTopOfList() {
+        for (int step = 0; step < MAX_LIST_STEPS; step++) {
+            if (!isPresent(focusInList)) {
+                dpad.down();   // overshot into the toolbar — back onto the first row, then re-check
+                continue;
+            }
+            if (isFocusedOnFastestServer()) {
+                return this;
+            }
+            dpad.up();
+        }
+        throw new IllegalStateException("Could not reach the top of the server list");
+    }
+
+    /** True when the focused row sits right under the "Fastest server" title (before the next section). */
+    private boolean isFocusedOnFastestServer() {
+        Integer focusY = focusedY();
+        List<WebElement> title = appiumDriver.findElements(fastestServerTitle);
+        if (focusY == null || title.isEmpty() || title.get(0).getRect().getY() > focusY) {
+            return false;
+        }
+        List<WebElement> next = appiumDriver.findElements(recentlyUsedTitle);
+        if (next.isEmpty()) {
+            next = appiumDriver.findElements(allServersTitle);
+        }
+        return next.isEmpty() || next.get(0).getRect().getY() > focusY;
+    }
+
+    @Step("Back to the main screen")
+    public MainScreenPage backToMainScreen() {
+        dpad.back();
+        return waitForMainScreen();
+    }
+
+    private Integer focusedY() {
+        var els = appiumDriver.findElements(AppiumBy.androidUIAutomator("new UiSelector().focused(true)"));
+        return els.isEmpty() ? null : els.get(0).getRect().getY();
     }
 
     // ---- Search ----

@@ -157,7 +157,9 @@ src/
 │   │           ├── PayWallPage.java        # pay wall: 3 plans, badges/CTA/footer follow the focus
 │   │           ├── PlayBillingPage.java    # Google Play TV billing sheet (com.android.vending)
 │   │           ├── RestorePurchasePage.java # Restore purchase dialog (no subscription / restored)
-│   │           ├── ServerListPage.java     # server list: search / sort / select (clusters)
+│           ├── ConnectionFailedPage.java # "Couldn't connect to server" dialog (Change server / Back to main)
+│   │           ├── ServerListPage.java     # server list: search / sort / select (ALL Servers clusters)
+│           │                              #   + Recently used: read / verify / selectRecentServer
 │   │           ├── SettingsMenuPage.java   # settings popup (gear) — opens the info screens
 │   │           ├── HelpSupportPage.java    # Help & Support screen
 │   │           ├── PrivacyNoticePage.java  # Privacy Notice screen
@@ -178,6 +180,7 @@ src/
         ├── SignInTest.java, SignUpTest.java         # start from a clean slate (own precondition)
         ├── PayWallTest.java                         # pay wall + Google Play purchase / restore chain
         ├── MainScreenPageTest.java, ProtocolsTest.java, ServerListTest.java
+        ├── RecentlyUsedServersTest.java             # Recently used: last server on top + connect from it
         ├── ReinstallTest.java                       # uninstall + install APK from apps/installation
         ├── HelpSupportTest.java, PrivacyNoticeTest.java, TermsOfServiceTest.java, SignOutTest.java
         ├── SplitTunnelingTest.java                  # split tunneling: exclude an app + persistence
@@ -191,13 +194,15 @@ Navigation lives in `Navigator` + the `Pages` enum, **not** in blind BACK-loops.
 
 - `detectPage()` reads `getPageSource()` **once** and matches unique resource-ids → a `Pages`
   value. Order matters (a dialog overlays main; sub-screens before the screen they open from):
-  `RECONNECT_DIALOG (action_cancel_btn)` → **`PAYWALL (paywall_root)`** → `SIGN_UP (iv_sign_up_qr)`
+  `RECONNECT_DIALOG (action_cancel_btn)` → **`CONNECTION_FAILED_DIALOG (action_home_page)`**
+  → **`PAYWALL (paywall_root)`** → `SIGN_UP (iv_sign_up_qr)`
   → `SIGN_IN (tv_sign_in_code)`
   → `WELCOME (btn_sign_in)` → `SERVER_LIST (tv_title)` → `MAIN (tvConnectButton)`
   → `DEBUG_MENU (logs_recycler_view)` → `INFO_SCREEN (btn_go_back || tv_settings_help_support)` → `UNKNOWN`.
 - `detectCurrentPage(retry, poll)` polls, absorbing the loading/splash screen.
 - `toMainScreen()` / `toWelcome()` loop "detect → one corrective step": login on WELCOME/SIGN_IN,
-  cancel the reconnect dialog, BACK out of SERVER_LIST / SIGN_UP / **PAYWALL** / **INFO_SCREEN** /
+  cancel the reconnect dialog, press **"Back to main page"** on the connection-failed dialog
+  (both in `toMainScreen()` and `toWelcome()`), BACK out of SERVER_LIST / SIGN_UP / **PAYWALL** / **INFO_SCREEN** /
   **DEBUG_MENU**,
   wait on UNKNOWN. The debug/logger screen (`LoggerActivity`) opens on a ~3s hold of Connect
   (`MainScreenPage.holdConnect`); BACK returns to main.
@@ -222,12 +227,13 @@ clean screen (chain `.goBack()`).
 6. Register the class in `regression.xml` and **renumber**: Allure sorts tree nodes as strings, so
    the numbers in `@Feature` / `@Story` are what keep the report in run order.
    - `@Feature` = `N. Name`, numbered `1..8` in the order the classes appear in `regression.xml`;
-     classes that share a feature (currently only `7. Settings menu`) **must stay adjacent** there.
+     classes that share a feature (`6. Server List`, `7. Settings menu`) **must stay adjacent** there.
    - `@Story` = `NN. Name`, **zero-padded**, sequential across the whole suite in the same order.
    - Current map: `1. Installation`/`01. Reinstall app` · `2. Sign up`/`02.` · `3. Login`/`03.` ·
-     `4. Main screen`/`04.` · `5. Protocols`/`05.` · `6. Server List`/`06.` ·
-     `7. Settings menu`/`07. Help & Support`, `08. Privacy Notice`, `09. Terms of Service`,
-     `10. Split Tunneling`, `11. Sign Out` · `8. Pay wall`/`12.`.
+     `4. Main screen`/`04.` · `5. Protocols`/`05.` ·
+     `6. Server List`/`06. Server List`, `07. Recently used` ·
+     `7. Settings menu`/`08. Help & Support`, `09. Privacy Notice`, `10. Terms of Service`,
+     `11. Split Tunneling`, `12. Sign Out` · `8. Pay wall`/`13.`.
    - Inserting a class in the middle shifts every later number — and the Testomat.io suite titles
      with it, so run the `testomatio-tv-sync` skill afterwards.
 7. Export the new test to Testomat.io and add it to `testomatio-mapping.json` — see
@@ -337,9 +343,41 @@ Restore purchase dialog (`dialog_generic_confirmation_layout_tv`, raised from th
   Okay keeps the user on the sign-in screen
 - active subscription → "Subscription Restored"; Okay opens the main screen (premium, no account)
 
+Connection-failed dialog (`ConnectionFailedPage`) — replaces main after a failed (re)connect, e.g.
+switching protocol to V2Ray on a server that does not answer on it:
+- `dialog_root_view`, `tv_dialog_title` ("Couldn't connect to server"), `tv_dialog_sub_title`
+  ("Connection failed. Check your internet connection, switch servers, or try a different VPN protocol.")
+- `action_change_server` "Change server" (focused by default) → server list;
+  `action_home_page` "Back to main page" → main
+- `tvConnectStatus` is **absent** while it is shown — `MainScreenPage.verifyConnected()` therefore
+  polls for CONNECTED **or** this dialog; on the dialog it runs `verifyConnectionFailed()`, leaves via
+  "Back to main page" (so the next data-provider row starts on main) and fails with
+  `Connection failed: …` instead of a `TimeoutException` on `tvConnectStatus`.
+
 Server list (`TvServerListActivity`):
 - `tv_title` ("Select Server Location"), `tv_sort_option`, `tv_section_title`, `tv_name`,
-  `tv_ping`, `tv_all_server_title`. Reconnect-on-protocol-change dialog: `tv_dialog_title`,
+  `tv_ping`, `tv_all_server_title`.
+- Three sections in `lv_server_list`, top to bottom: **"Fastest server"** (one row, country label,
+  e.g. `Germany`) → **"Recently used"** (`tv_section_title`; up to 3 leaf servers by alias,
+  e.g. `Japan - 1`, most recent first, no duplicates; **absent on a fresh install**) →
+  **"ALL Servers"** (`tv_all_server_title` header, country clusters that open
+  `server_popup_items_container`).
+- The same label can be in several sections (`Germany` as fastest *and* as a cluster; a recent
+  row can match too). Selecting a fastest/recent row **connects at once** — no popup — so
+  `ServerListPage.selectServer(...)` first **skips the top sections by count** (1 Fastest row +
+  N recent rows, read while the list is at the top) and only then searches the clusters. Recent rows
+  have their own `selectRecentServer(...)` (index in `recentServers()` → that many DOWNs from the
+  Fastest row → assert the focused text → OK); `verifyRecentlyUsed(...)` reads the section.
+- **Never decide the section by the titles' y once you moved**: a single DOWN scrolls the focused
+  row to the top of the viewport and the section titles go off screen (verified on device). The
+  titles are only reliable with the focus on the Fastest row.
+- Picking a server (ALL or recent) while connected switches the tunnel directly — no reconnect dialog.
+- **The list does not always open at the top**: after a disconnect the focus lands on the selected
+  server's cluster deep inside ALL Servers, with no section title on screen (rows above scroll in
+  before their titles do). `ServerListPage.focusTopOfList()` presses UP until the "Fastest server"
+  row is focused with its title visible (UP from that row leaves the list into the toolbar → one
+  DOWN back, re-check);
+  `selectServer`, `selectRecentServer` and `recentServers` all start with it. Reconnect-on-protocol-change dialog: `tv_dialog_title`,
   `action_ok_btn` (Reconnect), `action_cancel_btn` (Cancel).
 
 ## Login (device-code, no manual QR)

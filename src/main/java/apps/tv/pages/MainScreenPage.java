@@ -237,13 +237,50 @@ public class MainScreenPage extends BasePage {
 
     @Step("Verify the VPN reports connected in the UI (status CONNECTED + timer running)")
     public MainScreenPage verifyConnected() {
-        boolean connected = waitForText(connectStatus, STATUS_CONNECTED, Duration.ofSeconds(45));
+        boolean connected = waitForConnectedOrFailure(Duration.ofSeconds(45));
+        ConnectionFailedPage failed = new ConnectionFailedPage(testContext);
+        if (!connected && failed.isShown()) {
+            // The app gave up and replaced main with "Couldn't connect to server": assert that
+            // explicitly, then leave the dialog so the next test (next protocol) starts on main.
+            failed.verifyConnectionFailed().backToMainPage();
+            Assert.fail("Connection failed: the app showed '" + ConnectionFailedPage.TITLE
+                    + "' instead of reaching CONNECTED");
+        }
         attachScreenToReport("After connect");
         Assert.assertTrue(connected,
                 "VPN did not report CONNECTED within 45s. Current status: " + textOf(connectStatus));
         Assert.assertNotEquals(textOf(timeConnectedValue), TIME_IDLE,
                 "Connection timer is still idle (--:--:--) after connecting");
         return this;
+    }
+
+    /**
+     * Polls until the status reads CONNECTED (true) or the "Couldn't connect to server" dialog
+     * appears / the timeout runs out (false). Ends early on the dialog instead of burning the timeout.
+     */
+    private boolean waitForConnectedOrFailure(Duration timeout) {
+        ConnectionFailedPage failed = new ConnectionFailedPage(testContext);
+        long deadline = System.currentTimeMillis() + timeout.toMillis();
+        while (System.currentTimeMillis() < deadline) {
+            List<WebElement> status = appiumDriver.findElements(connectStatus);
+            try {
+                if (!status.isEmpty() && STATUS_CONNECTED.equalsIgnoreCase(status.get(0).getText().trim())) {
+                    return true;
+                }
+            } catch (org.openqa.selenium.StaleElementReferenceException ignored) {
+                // re-rendered between find and getText — poll again
+            }
+            if (failed.isShown()) {
+                return false;
+            }
+            try {
+                Thread.sleep(500);   // not pause(): that one is an @Step and would flood Allure
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return false;
+            }
+        }
+        return false;
     }
 
     /**

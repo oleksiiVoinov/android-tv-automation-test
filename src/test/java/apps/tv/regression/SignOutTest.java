@@ -23,7 +23,7 @@ import org.testng.annotations.Test;
 public class SignOutTest extends BaseTest {
 
     @Test(priority = 1, description = "Decline on the sign-out dialog keeps the user signed in")
-    @Story("11. Sign Out")
+    @Story("12. Sign Out")
     @Severity(SeverityLevel.NORMAL)
     @Description("""
             Objective: verify declining the sign-out confirmation keeps the user signed in
@@ -45,7 +45,7 @@ public class SignOutTest extends BaseTest {
     }
 
     @Test(priority = 2, description = "Confirm sign out → signed-out screen → welcome")
-    @Story("11. Sign Out")
+    @Story("12. Sign Out")
     @Severity(SeverityLevel.BLOCKER)
     @Description("""
             Objective: verify the full sign-out flow lands on the welcome screen (signed out)

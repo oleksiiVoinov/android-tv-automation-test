@@ -115,7 +115,7 @@ public class ServerList {
     }
 
     public ServerV7 getRandomServer() {
-        return getRandomServer(List.of());
+        return getRandomServer(List.of("Austria", "Spain", "France", "Germany"));
     }
 
     /**

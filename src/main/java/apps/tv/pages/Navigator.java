@@ -31,6 +31,8 @@ public class Navigator extends BasePage {
     private static final String PAYWALL_SIG = PKG + "paywall_root";
     private static final String SERVER_LIST_SIG = PKG + "tv_title";
     private static final String RECONNECT_DIALOG_SIG = PKG + "action_cancel_btn";
+    // "Couldn't connect to server" — replaces main after a failed (re)connect; leave via "Back to main page".
+    private static final String CONNECTION_FAILED_SIG = PKG + "action_home_page";
     // Info sub-screens (Help/Privacy/Terms) all carry a "Go back"; the settings popup carries this item;
     // the split-tunneling screen carries the "all apps" master checkbox. All are escapable with BACK.
     private static final String GO_BACK_SIG = PKG + "btn_go_back";
@@ -60,6 +62,9 @@ public class Navigator extends BasePage {
         // recognised before the welcome screen they were opened from.
         if (source.contains(RECONNECT_DIALOG_SIG)) {
             return Pages.RECONNECT_DIALOG;
+        }
+        if (source.contains(CONNECTION_FAILED_SIG)) {
+            return Pages.CONNECTION_FAILED_DIALOG;
         }
         if (source.contains(PAYWALL_SIG)) {
             return Pages.PAYWALL;
@@ -112,7 +117,8 @@ public class Navigator extends BasePage {
 
     /**
      * Drives the app to the main connect screen from wherever it is: logs in from the welcome /
-     * sign-in screens, cancels the reconnect dialog, backs out of the server list / sign-up, and
+     * sign-in screens, cancels the reconnect dialog, leaves the connection-failed dialog via
+     * "Back to main page", backs out of the server list / sign-up, and
      * waits out loading screens.
      */
     @Step("Navigate to the main screen")
@@ -129,6 +135,7 @@ public class Navigator extends BasePage {
                         RuntimeConfig.getRequired("tvPassword"));
                 case SIGN_UP, PAYWALL -> dpad.back();      // back to welcome, then login next loop
                 case RECONNECT_DIALOG -> dpad.focusOnAndSelect(org.openqa.selenium.By.id(RECONNECT_DIALOG_SIG));
+                case CONNECTION_FAILED_DIALOG -> dpad.focusOnAndSelect(org.openqa.selenium.By.id(CONNECTION_FAILED_SIG));
                 case SERVER_LIST, INFO_SCREEN, DEBUG_MENU -> dpad.back();
                 case UNKNOWN, LOADING -> pause(Duration.ofSeconds(1));
             }
@@ -153,6 +160,7 @@ public class Navigator extends BasePage {
                 }
                 case SIGN_IN, SIGN_UP, PAYWALL, SERVER_LIST, RECONNECT_DIALOG, INFO_SCREEN,
                      DEBUG_MENU -> dpad.back();
+                case CONNECTION_FAILED_DIALOG -> dpad.focusOnAndSelect(org.openqa.selenium.By.id(CONNECTION_FAILED_SIG));
                 case MAIN -> throw new IllegalStateException(
                         "Expected the welcome screen but the app is signed in (on main). "
                                 + "Clear app data before login/sign-up tests.");

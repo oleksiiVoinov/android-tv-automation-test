@@ -9,6 +9,7 @@ public enum Pages {
     PAYWALL,          // TvPaywallActivity ("Choose your Premium plan") — opened by Sign up
     SERVER_LIST,      // TvServerListActivity
     RECONNECT_DIALOG, // "Do you want to reconnect with the new protocol?"
+    CONNECTION_FAILED_DIALOG, // "Couldn't connect to server" — Change server / Back to main page
     DEBUG_MENU,       // LoggerActivity (opened by holding Connect ~3s) — BACK returns to main
     INFO_SCREEN,      // settings popup / Help & Support / Privacy Notice / Terms — has a "Go back"
     LOADING,          // splash / loading, nothing actionable yet

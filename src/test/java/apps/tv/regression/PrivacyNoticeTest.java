@@ -19,7 +19,7 @@ import org.testng.annotations.Test;
 public class PrivacyNoticeTest extends BaseTest {
 
     @Test(priority = 1, description = "Privacy Notice menu item opens the Privacy Notice screen")
-    @Story("08. Privacy Notice")
+    @Story("09. Privacy Notice")
     @Severity(SeverityLevel.NORMAL)
     @Description("""
             Objective: verify the 'Privacy Notice' menu item redirects to the Privacy Notice screen

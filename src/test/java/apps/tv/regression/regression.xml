@@ -2,7 +2,7 @@
 <suite name="Android TV - Regression">
     <test name="tv regression">
         <!-- Run order defines the Allure behaviors tree: @Feature is numbered 1..8 and @Story
-             01..12 strictly in the order below (Allure sorts tree nodes as strings, so the leading
+             01..13 strictly in the order below (Allure sorts tree nodes as strings, so the leading
              zero on the story is what keeps the report in run order). Classes that share a feature
              must stay adjacent. -->
         <classes>
@@ -12,6 +12,7 @@
             <class name="apps.tv.regression.MainScreenPageTest"/>
             <class name="apps.tv.regression.ProtocolsTest"/>
             <class name="apps.tv.regression.ServerListTest"/>
+            <class name="apps.tv.regression.RecentlyUsedServersTest"/>
             <class name="apps.tv.regression.HelpSupportTest"/>
             <class name="apps.tv.regression.PrivacyNoticeTest"/>
             <class name="apps.tv.regression.TermsOfServiceTest"/>

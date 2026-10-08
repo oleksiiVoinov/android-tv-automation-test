@@ -19,7 +19,7 @@ import org.testng.annotations.Test;
 public class TermsOfServiceTest extends BaseTest {
 
     @Test(priority = 1, description = "Terms of Service menu item opens the Terms of Service screen")
-    @Story("09. Terms of Service")
+    @Story("10. Terms of Service")
     @Severity(SeverityLevel.NORMAL)
     @Description("""
             Objective: verify the 'Terms of Service' menu item redirects to the Terms of Service screen

@@ -19,7 +19,7 @@ import org.testng.annotations.Test;
 public class HelpSupportTest extends BaseTest {
 
     @Test(priority = 1, description = "Help & Support menu item opens the Help & Support screen")
-    @Story("07. Help & Support")
+    @Story("08. Help & Support")
     @Severity(SeverityLevel.NORMAL)
     @Description("""
             Objective: verify the 'Help & Support' menu item redirects to the Help & Support screen
